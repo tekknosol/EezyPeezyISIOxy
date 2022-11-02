@@ -1,6 +1,6 @@
 # EezyPeezyISIOxy
 
-This repository is being used to develop a workflow for analyzing the ISIMIP-3a data to study the effects of climate change on lake hypolimnetic oxygen dynamics and originated at the GLEON 2022 conference.
+This repository is being used to develop a workflow for analyzing the ISIMIP-3a data to study the effects of climate change on lake hypolimnetic oxygen dynamics and originated at the GLEON 2022 conference at Lake George, NY.
 
 Contacts: co-champions Carolina Barbosa and Philipp Keller
 
