@@ -21,14 +21,28 @@ head(Temp_raw)
 Depth_raw <- read_delim('InputTest/temperate/output_z.txt', skip = 8, delim = '\t')
 Depth <- as.numeric(Depth_raw[1, -1]) * (-1)
 
-
 Temp <- Temp_raw
 colnames(Temp) <- c('Datetime', paste0('wtr_', Depth))
+Temp <- data.frame('datetime' = Temp$Datetime, rev(Temp[, 2:ncol(Temp)]))
+head(Temp)
 
-td.depth <- ts.thermo.depth(Temp)
-ggplot(subset(td.depth, Datetime > as.Date('2000-01-01') &
-                Datetime < as.Date('2000-12-31'))) + 
-  geom_path(aes(Datetime,thermo.depth)) 
+Temp <- Temp %>%
+  dplyr::filter('datetime' >= as.POSIXct('2000-01-01') &
+                  'datetime' <= as.POSIXct('2000-12-31'))
+
+Density.Diff <- water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2])
+Stratification <- ifelse(Density.Diff >= 0.1, 1, NA)
+plot(Stratification, type = 'l')
+
+Thermocline.depth <- ts.center.buoyancy(wtr = Temp)
+str(Thermocline.depth)
+ggplot(subset(Thermocline.depth, datetime > as.Date('2000-01-01') &
+                datetime < as.Date('2000-12-31')), 
+       aes(datetime, cent.n2)) + 
+  geom_path() +
+  geom_smooth() + 
+  scale_y_reverse()
+
 
 Volume <- # VOLUME FROM AREA DEPENDING ON THERMOCLINE DEPTH
 Area <- # ACTIVE AREA FOR SEDIMENT FLUX
