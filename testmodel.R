@@ -21,18 +21,29 @@ head(Temp_raw)
 Depth_raw <- read_delim('InputTest/temperate/output_z.txt', skip = 8, delim = '\t')
 Depth <- as.numeric(Depth_raw[1, -1]) * (-1)
 
+Area_raw <- read_delim('InputTest/temperate/hypsograph.dat', skip = 1, delim = ' ',
+                       col_names = F)
+
+Area = data.frame('Depth' = (Area_raw[, 1] - max(Area_raw[, 1])) * (-1), 'Area' = Area_raw[, 2])
+Area = apply(Area, 2, rev)
+
 Temp <- Temp_raw
 colnames(Temp) <- c('Datetime', paste0('wtr_', Depth))
 Temp <- data.frame('datetime' = Temp$Datetime, rev(Temp[, 2:ncol(Temp)]))
 head(Temp)
 
 Temp <- Temp %>%
-  dplyr::filter('datetime' >= as.POSIXct('2000-01-01') &
-                  'datetime' <= as.POSIXct('2000-12-31'))
+  dplyr::filter(datetime >= as.POSIXct('2000-01-01') &
+                  datetime <= as.POSIXct('2000-12-31'))
 
-Density.Diff <- water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2])
-Stratification <- ifelse(Density.Diff >= 0.1, 1, NA)
-plot(Stratification, type = 'l')
+Stratification <- data.frame('Datetime' = Temp$datetime, 'Density.Diff' = water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2]))
+Stratification$Stratif.Check <- ifelse(Stratification$Density.Diff >= 0.1, 1, NA)
+ggplot(Stratification) + geom_line(aes(Datetime, Stratif.Check))
+
+Strat.Period <- (na.contiguous(Stratification$Stratif.Check))
+
+Temp <- Temp[attributes(Strat.Period)$tsp[1]: 
+             attributes(Strat.Period)$tsp[2],]
 
 Thermocline.depth <- ts.center.buoyancy(wtr = Temp)
 str(Thermocline.depth)
