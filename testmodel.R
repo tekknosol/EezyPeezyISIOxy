@@ -1,6 +1,7 @@
 library(tidyverse)
 library(rLakeAnalyzer)
 library(LakeMetabolizer)
+library(deSolve)
 
 Temp_raw <- read_delim('InputTest/temperate/output_temp.txt', skip = 8, delim = '\t')
 str(Temp_raw)
@@ -77,20 +78,20 @@ for (k in 1:10){
   
   Oxygen <- rep(NA, length(Volume))
   
-  Oxygen[1] <- o2.at.sat.base(temp = Temp[1], altitude = 500) * Volume[1] # g
+  Oxygen[1] <- o2.at.sat.base(temp = Temp[1], altitude = 500) #* Volume[1] # g
     
   for (i in 2:length(Oxygen)){
     
-    Oxygen[i] <- (Oxygen[i - 1] + 
-                    Area[i - 1] * (Flux * 
-                    ((Oxygen[i - 1]/ Volume[i -1 ]) / (Khalf + Oxygen[i - 1] / Volume[i - 1] )) * 
-                    Theta^(Temp[i-1] - 20)) * dt ) * Volume[i] / Volume[i-1]
+    Oxygen[i] <- Oxygen[i - 1] + 
+                    ((Area[i - 1] * Flux * 
+                    ((Oxygen[i - 1]) / (Khalf + Oxygen[i - 1])) * 
+                    Theta^(Temp[i-1] - 20)) * dt ) / Volume[i-1]
     
   }
   
   
   
-  Output <- cbind(Output, Oxygen / Volume)
+  Output <- cbind(Output, Oxygen)
 
 }
 
@@ -107,30 +108,37 @@ ggplot(m.Output_df) +
 
 
 
-library(deSolve)
 
 Time_linear <- seq(1, length(Temp), 1)
 Area_linear <- approxfun(x = Time_linear, y = Area, method = "linear", rule = 2)
+Volumediff_linear <- approxfun(x = Time_linear, y = (Volume)/lag(Volume), method = "linear", rule = 2)
 Volume_linear <- approxfun(x = Time_linear, y = Volume, method = "linear", rule = 2)
 Temp_linear <- approxfun(x = Time_linear, y = Temp, method = "linear", rule = 2)
 
 # Model code
-o2_model <- function(t, y, parms){
-  dO2 <- (Area_linear(t) * (Flux *
-        ((y/ Volume_linear(t)) / (Khalf + y/ Volume_linear(t))) *
-        Theta^(Temp_linear(t) - 20)) ) * Volume_linear(t) / Volume_linear(t-1)
-
-  return(list(dO2))
+o2_model <- function(Time, State, Pars) {
+  with(as.list(c(State, Pars)), {
+   cO2 <- y
+    
+    SedimentFlux    <- Area_linear(Time) * Flux # m2 * g/m2/d
+    MichaelisMenten   <- ((cO2) / (Khalf + cO2)) # g/m3 / g/m3
+    ArrheniusCorrection <- Theta^(Temp_linear(Time) - 20) # -
+    
+    dmO2        <-  SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(Time)
+    # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
+    
+    return(list(c(dmO2)))
+  })
 }
 
 # Define parameters for model
-parameters <- c(Flux, Khalf, Theta)
+parameters <- c(Flux = Flux, Khalf = Khalf, Theta = Theta)
 
-yini <- o2.at.sat.base(temp = Temp[1], altitude = 500) * Volume[1] # g
+yini <- c(cO2 = o2.at.sat.base(temp = Temp[1], altitude = 500)) # g/m3
 
 # Runge-Kutta 4th-order model solver
 Output_ode <- ode(times = Time_linear, y = yini, func = o2_model, 
                   parms = parameters, method = 'rk4')
 
-plot(Output_ode[, 2]/Volume)
+plot(Output_ode[, 2])
 
