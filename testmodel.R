@@ -15,11 +15,15 @@ Area_raw <- read_delim('InputTest/temperate/hypsograph.dat', skip = 1, delim = '
 # dO2/dt = Flux * (O2 / (Khalf + O2)) * Theta^(Temp - 20) * Area
 # g/day = g/m2/day  * m2
 
+
+###################################
+
 Output <- c(NULL)
 
 for (k in 1:10){
   # Normal distributions for parameter assumptions
-  Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d)
+  Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d) 
+  # 0.32 g/m2/d / 32 g/mol = 10 mmol O2/m2/d
   Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
   Theta <- rnorm(1, mean = 1.07, sd = 0.03) # (-)
   
@@ -107,7 +111,7 @@ ggplot(m.Output_df) +
   # scale_x_datetime(date_labels = "%M-")
 
 
-
+###################################
 
 Time_linear <- seq(1, length(Temp), 1)
 Area_linear <- approxfun(x = Time_linear, y = Area, method = "linear", rule = 2)
@@ -142,3 +146,33 @@ Output_ode <- ode(times = Time_linear, y = yini, func = o2_model,
 
 plot(Output_ode[, 2])
 
+
+
+
+###################################
+
+Output = c(NULL)
+for (k in 1:1000){
+  # Normal distributions for parameter assumptions
+  Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d) 
+  # 0.32 g/m2/d / 32 g/mol = 10 mmol O2/m2/d
+  Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
+  Theta <- rnorm(1, mean = 1.07, sd = 0.03) # (-)
+  
+  parameters <- c(Flux = Flux, Khalf = Khalf, Theta = Theta)
+  
+  Output_ode <- ode(times = Time_linear, y = yini, func = o2_model, 
+                    parms = parameters, method = 'rk4')
+  
+  Output <- cbind(Output, Output_ode[, 2])
+}
+
+Output_df = data.frame('Time' = Thermocline.PK$datetime, Output)
+
+m.Output_df = pivot_longer(Output_df, 2:last_col())
+m.Output_df <- m.Output_df %>% 
+  mutate(Time = lubridate::as_datetime(Time))
+
+ggplot(m.Output_df) +
+  geom_line(aes(Time, value, group = name)) +
+  theme_bw() + xlab('Date') + ylab('O2 [mg/L]')
