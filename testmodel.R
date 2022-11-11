@@ -89,11 +89,18 @@ for (k in 1:10){
     
   for (i in 2:length(Oxygen)){
     
+    # EULER SCHEME
     Oxygen[i] <- Oxygen[i - 1] + 
                     ((Area[i - 1] * Flux * 
                     ((Oxygen[i - 1]) / (Khalf + Oxygen[i - 1])) * 
-                    Theta^(Temp[i-1] - 20)) * dt ) / Volume[i-1]
+                    Theta^(Temp[i-1] - 20))) * dt  / Volume[i-1]
     
+    F_Oxygen = (((Area[i - 1] * Flux *
+                    ((Oxygen[i - 1]) / (Khalf + Oxygen[i - 1])) *
+                    Theta^(Temp[i-1] - 20)))) / Volume[i-1] * (-1)
+    
+    # PATANKAR EULER SCHEME
+    Oxygen[i]  <- (Oxygen[i - 1] +  dt * 1e-10) / (1 + dt   * F_Oxygen/Oxygen[i - 1])
   }
   
   
@@ -143,27 +150,10 @@ parameters <- c(Flux = Flux, Khalf = Khalf, Theta = Theta)
 
 yini <- c(cO2 = o2.at.sat.base(temp = Temp[1], altitude = 500)) # g/m3
 
-# Runge-Kutta 4th-order model solver
-Output_ode <- ode(times = Time_linear, y = yini, func = o2_model, 
-                  parms = parameters, method = 'rk4')
-
-plot(Output_ode[, 2])
-
-
-
-
-###################################
-
 Output = c(NULL)
 for (k in 1:1000){
   # Normal distributions for parameter assumptions
   Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d) 
-  # 0.32 g/m2/d / 32 g/mol = 10 mmol O2/m2/d
-  # Although eutrophic lakes tend to have a high sediment oxygen demand, 
-  # with specific values ranging from 0.3 g m???2 d???1 (Romero et al., 2004; 
-  # Steinsberger et al., 2019) to extreme values of 80 g m???2 d???1 (Cross and 
-  # Summerfelt, 1987), most studies measured or applied a value between 1 and 
-  # 4 g m???2 d???1 (Mi et al., 2020; Veenstra and Nolen, 1991).
   Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
   Theta <- rnorm(1, mean = 1.07, sd = 0.03) # (-)
   
