@@ -10,3 +10,20 @@ GIT-HUB sources:
 https://www.youtube.com/watch?v=B-FHx4l1BNU 
 
 <a href="url"><img src="OxygenTest.png" width=40% height=40% ></a>
+
+```mermaid
+graph TD
+    A[1 Folder per Lake\nLake 1:n] --> B(output_temp.txt)
+    A --> C(output_z.txt)
+    A --> D(hypsograph.dat)
+    subgraph ide1 [" "]
+    B & C & D
+    end
+    B --> E{Thermal script}
+    C --> E
+    D --> E
+    E --> F(thermal_info.csv)
+    F --> G{Oxygen script}
+    G --> H(oxygen_info.csv)
+
+```
