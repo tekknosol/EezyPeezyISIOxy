@@ -15,7 +15,7 @@ https://www.youtube.com/watch?v=B-FHx4l1BNU
 
 ```mermaid
 graph TD
-    A[1 Folder per Lake\nLake 1:n] --> B(output_temp.txt)
+    A[1 Folder per Lake - Lake 1:n] --> B(output_temp.txt)
     A --> C(output_z.txt)
     A --> D(hypsograph.dat)
     subgraph ide1 [" "]
@@ -27,5 +27,7 @@ graph TD
     E --> F(thermal_info.csv)
     F --> G{Oxygen script}
     G --> H(oxygen_info.csv)
+    F --to be decided--> I(output.nc)
+    H --to be decided--> I
 
 ```
