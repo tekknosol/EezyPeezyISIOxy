@@ -4,49 +4,51 @@ library(LakeMetabolizer)
 library(deSolve)
 library(pracma)
 
-Temp_raw <- read_delim('InputTest/temperate/output_temp.txt', skip = 8, delim = '\t')
-str(Temp_raw)
-head(Temp_raw)
-
-Depth_raw <- read_delim('InputTest/temperate/output_z.txt', skip = 8, delim = '\t')
-Depth <- as.numeric(Depth_raw[1, -1]) * (-1)
-
+# Temp_raw <- read_delim('InputTest/temperate/output_temp.txt', skip = 8, delim = '\t')
+# str(Temp_raw)
+# head(Temp_raw)
+# 
+# Depth_raw <- read_delim('InputTest/temperate/output_z.txt', skip = 8, delim = '\t')
+# Depth <- as.numeric(Depth_raw[1, -1]) * (-1)
+# 
 Area_raw <- read_delim('InputTest/temperate/hypsograph.dat', skip = 1, delim = ' ',
                        col_names = F)
-# dO2/dt = Flux * (O2 / (Khalf + O2)) * Theta^(Temp - 20) * Area
-# g/day = g/m2/day  * m2
-
-
+# # dO2/dt = Flux * (O2 / (Khalf + O2)) * Theta^(Temp - 20) * Area
+# # g/day = g/m2/day  * m2
+# 
+# 
 Area_list = data.frame('Depth' = (Area_raw[, 1] - max(Area_raw[, 1])) * (-1), 'Area' = Area_raw[, 2])
 Area_list = apply(Area_list, 2, rev)
 Area_list <- as.data.frame(Area_list)
+# 
+# Temp <- Temp_raw
+# colnames(Temp) <- c('Datetime', paste0('wtr_', Depth))
+# Temp <- data.frame('datetime' = Temp$Datetime, rev(Temp[, 2:ncol(Temp)]))
+# head(Temp)
+# 
+# Temp <- Temp %>%
+#   dplyr::filter(datetime >= as.POSIXct('2000-01-01') &
+#                   datetime <= as.POSIXct('2000-12-31'))
+# 
+# Stratification <- data.frame('Datetime' = Temp$datetime, 'Density.Diff' = water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2]))
+# Stratification$Stratif.Check <- ifelse(Stratification$Density.Diff >= 0.1, 1, NA)
+# ggplot(Stratification) + geom_line(aes(Datetime, Stratif.Check))
+# 
+# Strat.Period <- (na.contiguous(Stratification$Stratif.Check))
+# 
+# Temp <- Temp[attributes(Strat.Period)$tsp[1]: 
+#                attributes(Strat.Period)$tsp[2],]
+# 
+# Thermocline.depth <- ts.center.buoyancy(wtr = Temp)
+# str(Thermocline.depth)
+# ggplot(subset(Thermocline.depth, datetime > as.Date('2000-01-01') &
+#                 datetime < as.Date('2000-12-31')), 
+#        aes(datetime, cent.n2)) + 
+#   geom_path() +
+#   geom_smooth() + 
+#   scale_y_reverse()
 
-Temp <- Temp_raw
-colnames(Temp) <- c('Datetime', paste0('wtr_', Depth))
-Temp <- data.frame('datetime' = Temp$Datetime, rev(Temp[, 2:ncol(Temp)]))
-head(Temp)
-
-Temp <- Temp %>%
-  dplyr::filter(datetime >= as.POSIXct('2000-01-01') &
-                  datetime <= as.POSIXct('2000-12-31'))
-
-Stratification <- data.frame('Datetime' = Temp$datetime, 'Density.Diff' = water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2]))
-Stratification$Stratif.Check <- ifelse(Stratification$Density.Diff >= 0.1, 1, NA)
-ggplot(Stratification) + geom_line(aes(Datetime, Stratif.Check))
-
-Strat.Period <- (na.contiguous(Stratification$Stratif.Check))
-
-Temp <- Temp[attributes(Strat.Period)$tsp[1]: 
-               attributes(Strat.Period)$tsp[2],]
-
-Thermocline.depth <- ts.center.buoyancy(wtr = Temp)
-str(Thermocline.depth)
-ggplot(subset(Thermocline.depth, datetime > as.Date('2000-01-01') &
-                datetime < as.Date('2000-12-31')), 
-       aes(datetime, cent.n2)) + 
-  geom_path() +
-  geom_smooth() + 
-  scale_y_reverse()
+lake_id = 'temperate'
 
 Thermocline.PK <- read.csv('InputTest/temperate/thermo_information.csv')
 
@@ -171,6 +173,25 @@ m.Output_df = pivot_longer(Output_df, 2:last_col())
 m.Output_df <- m.Output_df %>% 
   mutate(Time = lubridate::as_datetime(Time))
 
-ggplot(m.Output_df) +
-  geom_line(aes(Time, value, group = name)) +
-  theme_bw() + xlab('Date') + ylab('O2 [mg/L]')
+df <- m.Output_df %>%
+  group_by(Time) %>%
+  summarise(oxygen_mean = mean(value),
+            oxygen_median = median(value),
+            oxygen_sd = sd(value),
+            oxygen_upperPercentile = quantile(value, probs = c(0.975)),
+            oxygen_lowerPercentile = quantile(value, probs = c(0.025)),
+            tropic_state = 'oligotrophic') %>%
+  rename(datetime = Time)
+
+ggplot(df) +
+  geom_line(data = m.Output_df, aes(Time, value, group = name), col = 'grey', alpha = 0.5) +
+  geom_line(aes(datetime, oxygen_mean, col = 'mean'), lwd = 1.5) +
+  geom_line(aes(datetime, oxygen_median, col = 'median'), lwd = 1.5) +
+  geom_line(aes(datetime, oxygen_mean - oxygen_sd, col = 'sd_lower'), linetype = 'dashed', lwd = 1.5) +
+  geom_line(aes(datetime, oxygen_mean + oxygen_sd, col = 'sd_upper'), linetype = 'dashed', lwd = 1.5) +
+  geom_line(aes(datetime, oxygen_upperPercentile, col = '97.5'), lwd = 1.5) +
+  geom_line(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
+  ylab('DO conc. (g/m3)') + xlab("") +
+  theme_minimal()
+
+write_csv(file = paste0('InputTest/oxygen_info_meta_',lake_id), x = df)
