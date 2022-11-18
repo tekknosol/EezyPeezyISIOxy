@@ -18,24 +18,14 @@ thermal_info <- function(lake){
   # Calculate Schmidt stability
   # schmidt <- ts.schmidt.stability(wtr = Temp, bathy = hypso)
   
-  # Calculate length of stratified periods
-  strat_duration <- rle(Stratification)
-  strat_duration <- rep(strat_duration$values*strat_duration$lengths,strat_duration$lengths)
-  
-  # calculate length of non-stratified periods
-  strat_duration_inv <- rle(is.na(Stratification))
-  strat_duration_inv <- rep(strat_duration_inv$values*strat_duration_inv$lengths,strat_duration_inv$lengths)
-  
-  # combine length vectors
-  strat_duration <- ifelse(is.na(strat_duration), strat_duration_inv, strat_duration)
   
   thermal_info <- tibble(
     datetime = Temp$datetime,
     bottom_temperature = Temp[,length(Temp)],
     stratified = Stratification
   ) %>% 
-    left_join(Thermocline.depth %>% rename(thermocline_depth = thermo.depth), by = "datetime") %>% 
-    bind_cols(duration = strat_duration)
+    left_join(Thermocline.depth %>% rename(thermocline_depth = thermo.depth), by = "datetime")
+  
     # left_join(schmidt, by = "datetime") %>% 
     # mutate(schmidt.stability = ifelse(schmidt.stability > 30, 1, NA))
   
@@ -47,11 +37,19 @@ thermal_info <- function(lake){
   #   mutate(thermocline_depth = ifelse(is.na(stratified) ,NA, thermocline_depth))
   
   thermal_info <- thermal_info %>% 
-    mutate(rn = row_number()) %>%
-    group_by(year = year(datetime)) %>% 
-    mutate(thermocline_depth_smooth = predict(loess(thermocline_depth ~ rn, na.action = na.exclude))) %>% 
+    mutate(s = ifelse(!is.na(stratified), stratified, 2)) %>% 
+    mutate(strat_id = cumsum(c(TRUE, diff(s) != 0))) %>% 
+    group_by(strat_id) %>% 
+    mutate(thermocline_depth_smooth = plssmooth(thermocline_depth, lambda = 150)) %>% 
+    mutate(duration = n()) %>% 
     ungroup() %>% 
-    select(-rn, -year)
+    select(-s)
+    
+    # mutate(rn = row_number()) %>%
+    # group_by(year = year(datetime)) %>% 
+    # mutate(thermocline_depth_smooth = predict(loess(thermocline_depth ~ rn, na.action = na.exclude))) %>% 
+    # ungroup() %>% 
+    # select(-rn, -year)
   
   hypo_temp <- ts.layer.temperature(wtr = Temp, top = thermal_info$thermocline_depth, bottom = max(hypso$depths), bathy = hypso)
   
