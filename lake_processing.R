@@ -7,6 +7,8 @@ library(purrr)
 library(lubridate)
 library(pracma)
 library(tictoc)
+library(ncdf4)
+
 
 source(here("R/thermal_script.R"))
 source(here("R/thermocline_helper.R"))
@@ -23,3 +25,4 @@ lakes %>%
     lake %>% thermal_info()
     toc()
 })
+

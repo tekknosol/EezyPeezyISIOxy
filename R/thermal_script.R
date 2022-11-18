@@ -88,6 +88,25 @@ read_temp <- function(lake){
   Temp
 }
 
+read_temp_nc <- function(lake){
+  ncin <- nc_open(here(lake, "output.nc"))
+  Temp_raw_nc <- ncvar_get(ncin, "temp")
+  Temp_raw_nc <- data.frame(t(Temp_raw_nc))
+  tunits <- ncatt_get(ncin, "time", "units")
+  seq_date <- seq(from = as.Date(unlist(strsplit(tunits$value, "seconds since "))[2]), 
+                  length.out = dim(Temp_raw_nc)[1], by = "days")
+  Temp_raw_nc <- cbind(date=seq_date, Temp_raw_nc)
+  
+  Depth_raw_nc <- ncvar_get(ncin, "z")
+  Depth <- as.numeric(-Depth_raw_nc[,1])
+  
+  Temp <- Temp_raw_nc
+  colnames(Temp) <- c('Datetime', paste0('wtr_', Depth))
+  Temp <- data.frame('datetime' = Temp$Datetime, rev(Temp[, 2:ncol(Temp)]))
+  
+  Temp
+}
+
 read_hypso <- function(lake){
   # Read Hyspograph
   hypso <- read_delim(here(lake, "hypsograph.dat"), skip = 1, delim = " ", show_col_types = F, col_names = F)
