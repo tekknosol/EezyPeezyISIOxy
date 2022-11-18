@@ -4,6 +4,7 @@ library(LakeMetabolizer)
 library(lubridate)
 library(here)
 library(purrr)
+library(ncdf4)
 
 source(here("R/thermal_script.R"))
 
