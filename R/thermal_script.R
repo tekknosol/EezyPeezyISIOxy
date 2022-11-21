@@ -1,7 +1,7 @@
 thermal_info <- function(lake){
   # Read Temp & Depth
   
-  Temp <- lake %>% read_temp()
+  Temp <- lake %>% read_temp_nc()
 
   hypso <- lake %>% read_hypso()
   
@@ -115,4 +115,13 @@ read_hypso <- function(lake){
   hypso <- hypso %>% arrange(depths)
   
   hypso
+}
+
+plssmooth <- function(x, lambda=1000){
+  m <- length(x)
+  dd <- diag(m)
+  D <- diff(dd)
+  a <- dd+lambda*t(D)%*%D
+  rs <- solve(a,x)
+  return(rs)
 }

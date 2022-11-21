@@ -1,3 +1,4 @@
+# ---- libraries --------------
 library(tidyverse)
 library(rLakeAnalyzer)
 library(LakeMetabolizer)
@@ -6,23 +7,31 @@ library(here)
 library(purrr)
 library(lubridate)
 library(pracma)
-library(tictoc)
+library(ggpubr)
+library(future)
+library(furrr)
 library(ncdf4)
-
+library(tictoc)
 
 source(here("R/thermal_script.R"))
 source(here("R/thermocline_helper.R"))
 
-lake_folder <- "InputTest"
+# parallel processing - comment out next line for sequential run
+plan(multisession, workers = 5)
+
+
+# ---- script -----------------
+
+lake_folder <- "ObsDOTest"
 lakes <- list.files(here(lake_folder), full.names = T)
 
 lakes %>% 
-  walk(~{
+  future_walk(~{
     lake <- .x
     
-    # writes thermal_info.csv into lake folder
-    tic(msg = basename(lake))
+    # writes thermal_info into lake folder
+    tictoc::tic(msg = basename(lake))
     lake %>% thermal_info()
-    toc()
+    tictoc::toc()
 })
 
