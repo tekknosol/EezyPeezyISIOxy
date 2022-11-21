@@ -11,7 +11,8 @@ source('R/oxygen_helper.R')
 
 working_folder = 'ObsDOTest'
 lake_id = 'ob490'
-
+trophy = 'oligo'
+iterations = 100
 
 hypsography_data <- get_hypsography(lake_id = lake_id,
                                working_folder = working_folder)
@@ -21,7 +22,9 @@ thermal_data <- get_thermal_data(lake_id = lake_id,
                                  hypsography_data = hypsography_data)
 
 oxygen_output <- run_oxygen_model(thermal_data = thermal_data,
-                                  method = 'rk4')
+                                  method = 'rk4',
+                                  trophy = trophy,
+                                  iterations = iterations)
 
 save_model_output(lake_id = lake_id,
                   working_folder = working_folder,
