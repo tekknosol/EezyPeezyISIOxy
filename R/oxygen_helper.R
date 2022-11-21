@@ -47,7 +47,8 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
   return(thermo_information)
 }
 
-run_oxygen_model <- function(thermal_data, method = 'rk4'){
+run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
+                             iterations = 100){
 
   id_na <- which(is.na(thermal_data$stratified))
   thermal_data_reduced <- thermal_data[-id_na, ]
@@ -62,7 +63,8 @@ run_oxygen_model <- function(thermal_data, method = 'rk4'){
       next
     }
 
-    model_output <- consume_oxygen(thermal_subset = data_to_model, method = method, strat_id = i)
+    model_output <- consume_oxygen(thermal_subset = data_to_model, method = method, strat_id = i,
+                                   trophy = trophy, iterations = iterations)
 
     oxygen_df <- rbind(oxygen_df, model_output)
 
@@ -89,7 +91,8 @@ get_prior <- function(trophy){
   return(c(Flux = Flux, Khalf = Khalf, Theta = Theta))
 }
 
-consume_oxygen <- function(thermal_subset, method, strat_id){
+consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
+                           iterations){
 
   Time_linear <- seq(1, nrow(thermal_subset), 1)
   Area_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_area, method = "linear", rule = 2)
@@ -99,8 +102,8 @@ consume_oxygen <- function(thermal_subset, method, strat_id){
   yini <- c(cO2 = o2.at.sat.base(temp = thermal_subset$hypo_temp[1], altitude = 500)) # g/m3
 
   Output = c(NULL)
-  for (k in 1:100){
-    parameters <- get_prior(trophy = 'oligo')
+  for (k in 1:iterations){
+    parameters <- get_prior(trophy = trophy)
 
     Output_ode <- ode(times = Time_linear, y = yini, func = o2_model,
                       parms = parameters, method = 'rk4',
