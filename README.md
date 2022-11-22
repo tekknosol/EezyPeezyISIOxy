@@ -9,7 +9,7 @@ Working group members: Cayelan Carey, Chloe Faehndrich, Robert Ladwig, Sofia LaF
 GIT-HUB sources:
 https://www.youtube.com/watch?v=B-FHx4l1BNU 
 
-<a href="url"><img src="OxygenTest.png" width=40% height=40% ></a>
+<a href="url"><img src="OxygenTest.png" width=80% height=80% ></a>
 
 ## Flowchart
 
