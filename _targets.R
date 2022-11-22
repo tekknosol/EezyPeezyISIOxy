@@ -24,7 +24,7 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-options(clustermq.scheduler = "multicore")
+options(clustermq.scheduler = "multiprocess")
 
 source("R/thermal_script.R")
 source("R/thermocline_helper.R")
