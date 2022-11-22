@@ -25,6 +25,7 @@ tar_option_set(
 )
 
 tar_config_set(store = "~/scratch/isioxy/")
+tar_option_set(storage = "worker", retrieval = "worker")
 
 # tar_make_clustermq() configuration:
 # options(clustermq.scheduler = "multicore")
