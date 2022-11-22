@@ -91,9 +91,10 @@ get_prior <- function(trophy){
   return(c(Flux = Flux, Khalf = Khalf, Theta = Theta))
 }
 
-consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
+consume_oxygen <- function(thermal_subset, method, trophy,
                            iterations){
-
+  strat_id <- thermal_subset$strat_id
+  
   Time_linear <- seq(1, nrow(thermal_subset), 1)
   Area_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_area, method = "linear", rule = 2)
   Volume_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_volume, method = "linear", rule = 2)
@@ -150,14 +151,16 @@ o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear)
   })
 }
 
-save_model_output <- function(lake_id, working_folder, oxygen_output){
+save_model_output <- function(oxygen_output, lake_id){
 
   oxygen_output$lake_id <- lake_id
 
   # write_csv(file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.csv'), x = oxygen_output)
-  saveRDS(object = oxygen_output, file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.rds'))
+  filename <- paste0("results/oxygen_", lake_id,".rds")
+  saveRDS(object = oxygen_output, file = filename)
 
-  message('Output saved.')
+  return(filename)
+  # message('Output saved.')
 }
 
 create_plot <- function(oxygen_output, lake_id, working_folder){
