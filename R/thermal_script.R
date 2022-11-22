@@ -69,10 +69,11 @@ thermal_info <- function(lake){
                  rule = 2)$y # ACTIVE AREA FOR SEDIMENT FLUX
   
   thermal_info <- thermal_info %>% 
-    bind_cols(volume = Volume, area = Area)
+    bind_cols(hypo_volume = Volume, hypo_area = Area)
   
   # write_csv(thermal_info, file = here(lake, "/thermal_info.csv.gz"))
-  write_rds(thermal_info, file = here(lake, "/thermal_info.rds"), compress = "gz")
+  # write_rds(thermal_info, file = here(lake, "/thermal_info.rds"), compress = "gz")
+  return(thermal_info)
 }
 
 read_temp <- function(lake){
@@ -124,4 +125,43 @@ plssmooth <- function(x, lambda=1000){
   a <- dd+lambda*t(D)%*%D
   rs <- solve(a,x)
   return(rs)
+}
+
+reduce_thermal <- function(thermal){
+  thermal <- thermal %>% 
+    filter(!is.na(stratified)) %>% 
+    filter(duration > 2)
+  return(thermal)
+}
+
+create_plots_thermal <- function(thermal_data, lake_id, lake_folder){
+  year <- min(c(2010, year(max(thermal_data$datetime))-1))
+  
+  plot_df <- thermal_data %>% 
+    filter(year(datetime) %in% year) %>%
+    pivot_longer(any_of(c("thermocline_depth", "thermocline_depth_smooth")))
+  
+  temp <- read_temp_nc(here(lake_folder, lake_id))
+  
+  plot_temp <- temp %>%
+    filter(year(datetime) %in% year) %>%
+    pivot_longer(2:last_col()) %>%
+    mutate(name = as.numeric(str_sub(name, 5, nchar(name))))
+  
+  plot <- ggplot(plot_temp, aes(datetime, name))+
+    geom_raster(aes(fill = value))+
+    # scale_fill_viridis_c("Temp", option = "A")+
+    scale_fill_distiller("Temp", palette = "Spectral")+
+    scale_color_manual("Thermocline", labels = c("Depth raw", "Depth smooth"), values = c("grey50", "black"))+
+    geom_line(data = plot_df, aes(datetime, value, color = name))+
+    labs(x = "Date", y = "Depth")+
+    scale_y_reverse(expand = c(0,0))+
+    scale_x_date(expand=c(0,0), date_labels = "%b %Y")
+  
+  filename1 <- paste0('results/plots/thermo/', lake_id,'_thermocline_recent.jpg')
+  ggsave(filename =  filename1, width = 7,
+         height = 3, units = 'in', bg = "white")
+  
+  
+  c(filename1)
 }

@@ -160,7 +160,7 @@ save_model_output <- function(lake_id, working_folder, oxygen_output){
   message('Output saved.')
 }
 
-create_plot <- function(lake_id, working_folder, oxygen_output){
+create_plot <- function(oxygen_output, lake_id, working_folder){
 
   oxygen_output$year <- year(oxygen_output$datetime)
   ggplot(oxygen_output) +
@@ -172,10 +172,11 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
     facet_wrap(~ year, scales = 'free') +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot.png'),
-         width = 10, height = 10, units = 'in')
+  filename1 <- paste0('results/plots/oxygen/', lake_id, '_oxygen_plot.jpg')
+  ggsave(filename = filename1,
+         width = 10, height = 10, units = 'in', bg = "white")
 
   ggplot(subset(oxygen_output, year >= 2010)) +
     geom_point(aes(datetime, oxygen_mean, col = 'mean'), lwd = 1.5) +
@@ -185,10 +186,16 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_upperPercentile, col = '97.5'), lwd = 1.5) +
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot_recent.png'), width = 7,
-         height = 3, units = 'in')
+  filename2 <- paste0('results/plots/oxygen/', lake_id,'_oxygen_plot_recent.jpg')
+  ggsave(filename =  filename2, width = 7,
+         height = 3, units = 'in', bg = "white")
+  
+  
+  c(filename1, filename2)
+  
+  # lake_id
 
-  message('Plots saved.')
+  # message('Plots saved.')
 }
