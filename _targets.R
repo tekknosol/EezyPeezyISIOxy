@@ -24,6 +24,8 @@ tar_option_set(
   format = "rds" # default storage format
 )
 
+tar_config_set(store = "~/scratch/isioxy/")
+
 # tar_make_clustermq() configuration:
 # options(clustermq.scheduler = "multicore")
 options(clustermq.scheduler = "slurm")
