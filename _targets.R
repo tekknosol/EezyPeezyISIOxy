@@ -74,7 +74,9 @@ targets <- tar_map(
       iterations = 500
     ),
     pattern = map(thermal_to_model)),
-  tar_target(write_oxygen, save_model_output(oxygen, lake_id))
+  tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
+  tar_target(observations, read_observations(lake_id)),
+  tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file")
 )
 
 list(targets)

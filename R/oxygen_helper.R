@@ -202,3 +202,43 @@ create_plot <- function(oxygen_output, lake_id, working_folder){
 
   # message('Plots saved.')
 }
+
+
+save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
+
+  plot_df <- observed %>% 
+    filter(!is.na(DO_mgL)) %>% 
+    group_by(Date) %>% 
+    filter(Depth_m == max(Depth_m)) %>% 
+    ungroup() %>% 
+    select(Date, DO_mgL) %>% 
+    left_join(oxygen_data %>% mutate(Date = as_date(datetime)) %>% select(Date, oxygen_mean, oxygen_lowerPercentile, oxygen_upperPercentile))
+  
+  plot_df <- plot_df %>% 
+    # complete(Date = seq(min(Date), max(Date), by = "day")) %>% 
+    pivot_longer(any_of(c("DO_mgL", "oxygen_mean"))) %>% 
+    filter(year(Date) %in% rev(unique(year(plot_df$Date)))[1:min(20, length(unique(year(plot_df$Date))))])
+  
+  ggplot(plot_df , aes(x = Date))+
+    geom_ribbon(aes(ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile"))+
+    scale_fill_manual(name = NULL, values = c("grey"))+
+    scale_color_discrete(name = NULL, labels = c("Observed", "Modelled"))+
+    geom_line(aes(y = value, color = name))+
+    labs(y = "Oxygen")+
+    facet_wrap(~year(Date), scales = "free")
+  
+  filename1 <- paste0('results/plots/qc/', 'oxygen_', lake_id,'.jpg')
+  ggsave(filename = filename1,
+         width = 15, height = 10, units = 'in', bg = "white")
+  
+  filename1
+}
+
+read_observations <- function(lake_id){
+  id_lookup <- read_csv(here("data/ID_ODtest.csv"))
+  
+  hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
+  
+  read_rds("data/observed.rds") %>% 
+    filter(hylak_id == hylakid)
+}
