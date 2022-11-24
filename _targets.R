@@ -29,7 +29,7 @@ tar_option_set(storage = "worker", retrieval = "worker")
 
 tar_option_set(
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(memory = "500M", time = "00:45:00"))
+    clustermq = tar_resources_clustermq(template = list(n_jobs = 5, memory = "500M", time = "00:10:00"))
   )
 )
 
