@@ -47,7 +47,7 @@ source("R/oxygen_helper.R")
 lake_folder <- "ObsDOTest"
 
 lakes <- tibble(
- lake_id = list.files(here(lake_folder), full.names = F)[1]
+ lake_id = list.files(here(lake_folder), full.names = F)
 )
 
 numit <- 1000
