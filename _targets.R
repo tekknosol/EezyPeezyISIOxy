@@ -21,7 +21,8 @@ tar_option_set(
     "stringr",
     "here"
   ), # packages that your targets need to run
-  format = "rds" # default storage format
+  # format = "rds" # default storage format
+  format = "qs" # default storage format
 )
 
 tar_config_set(store = "~/scratch/isioxy/")
@@ -29,7 +30,7 @@ tar_option_set(storage = "worker", retrieval = "worker")
 
 tar_option_set(
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(cores = "5", memory = "500M", time = "00:10:00"))
+    clustermq = tar_resources_clustermq(template = list(memory = "2G", time = "01:00:00"))
   )
 )
 
@@ -46,10 +47,12 @@ source("R/oxygen_helper.R")
 lake_folder <- "ObsDOTest"
 
 lakes <- tibble(
- lake_id = list.files(here(lake_folder), full.names = F)
+ lake_id = list.files(here(lake_folder), full.names = F)[1]
 )
 
-numit <- 5
+numit <- 1000
+
+# tarobservations <- tar_target(observations, "data/observed.rds", format = "file")
 
 targets <- tar_map(
   values = lakes,
@@ -57,26 +60,31 @@ targets <- tar_map(
   # tar_target(oxygen, run_oxygen_model(thermal, method = 'rk4', trophy = 'oligo',
                                       # iterations = numit)),
   # tar_target(plot_oxygen, create_plot(oxygen, lake_id, "ObsDOTest"), format = "file"),
-  # tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, "ObsDOTest"), format = "file")
-  tar_target(
+  tar_group_count(
     thermal_to_model,
-    thermal %>%
+    tibble(data = thermal %>%
       filter(!is.na(stratified)) %>%
-      filter(duration > 2) %>%
-      group_by(strat_id) %>%
-      tar_group(),
-    iteration = "group"
+      filter(duration > 2) %>% 
+      group_split(strat_id)),
+    count = 10
+    # pattern = map(index_batch)
+    #   group_by(strat_id) %>%
+    #   tar_group(),
+    # iteration = "group"
   ),
-  tar_target(oxygen, consume_oxygen(
-      thermal_to_model,
-      method = "rk4",
-      trophy = "oligo",
-      iterations = 500
+  tar_target(oxygen,
+             run_oxygen_model(
+               thermal_to_model,
+                method = "rk4",
+                trophy = "oligo",
+                iterations = numit
+              ),
+      pattern = map(thermal_to_model)
     ),
-    pattern = map(thermal_to_model)),
   tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
   tar_target(observations, read_observations(lake_id)),
-  tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file")
+  tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file"),
+  tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, "ObsDOTest"), format = "file")
 )
 
 list(targets)
