@@ -135,16 +135,19 @@ reduce_thermal <- function(thermal){
 }
 
 create_plots_thermal <- function(thermal_data, lake_id, lake_folder){
-  year <- min(c(2010, year(max(thermal_data$datetime))-1))
+  # year <- min(c(2010, year(max(thermal_data$datetime))-1))
+  nyears <- 9
+  years <- rev(unique(year(thermal_data$datetime)))[1:min(nyears, length(unique(year(thermal_data$datetime))))]
   
   plot_df <- thermal_data %>% 
-    filter(year(datetime) %in% year) %>%
+    # filter(year(datetime) %in% year) %>%
+    filter(year(datetime) %in% years) %>% 
     pivot_longer(any_of(c("thermocline_depth", "thermocline_depth_smooth")))
   
   temp <- read_temp_nc(here(lake_folder, lake_id))
   
   plot_temp <- temp %>%
-    filter(year(datetime) %in% year) %>%
+    filter(year(datetime) %in% years) %>%
     pivot_longer(2:last_col()) %>%
     mutate(name = as.numeric(str_sub(name, 5, nchar(name))))
   
@@ -156,11 +159,12 @@ create_plots_thermal <- function(thermal_data, lake_id, lake_folder){
     geom_line(data = plot_df, aes(datetime, value, color = name))+
     labs(x = "Date", y = "Depth")+
     scale_y_reverse(expand = c(0,0))+
-    scale_x_date(expand=c(0,0), date_labels = "%b %Y")
+    scale_x_date(expand=c(0,0), date_labels = "%b %Y")+
+    facet_wrap(~year(datetime), scales = "free")
   
   filename1 <- paste0('results/plots/thermo/', lake_id,'_thermocline_recent.jpg')
-  ggsave(filename =  filename1, width = 7,
-         height = 3, units = 'in', bg = "white")
+  ggsave(filename =  filename1, width = 15,
+         height = 10, units = 'in', bg = "white")
   
   
   c(filename1)

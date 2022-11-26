@@ -3,6 +3,6 @@
 # This is a helper script to run the pipeline.
 # Choose how to execute the pipeline below.
 
-targets::tar_make()
-# targets::tar_make_clustermq(workers = 2) # nolint
+# targets::tar_make()
+targets::tar_make_clustermq(workers = 200, reporter = "summary") # nolint
 
