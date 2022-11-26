@@ -50,9 +50,13 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
 run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
                              iterations = 100){
 
+  # This filtering is done directly in the target workflow  
   # id_na <- which(is.na(thermal_data$stratified))
   # thermal_data_reduced <- thermal_data[-id_na, ]
   
+  # thermal_data is a tibble where each row contains a list of stratification event.
+  # This is necessary because of the target workflow
+  # bind_row re-structures it into a tibble
   thermal_data_reduced <- thermal_data$data %>% bind_rows()
 
   oxygen_df <- c()
@@ -105,8 +109,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
   yini <- c(cO2 = o2.at.sat.base(temp = thermal_subset$hypo_temp[1], altitude = 500)) # g/m3
 
   Output = c(NULL)
-  # Output <- 1:iterations %>% future_map_dfc(~{
-    # k <- .x
+  
   for (k in 1:iterations){
     parameters <- get_prior(trophy = trophy)
 
@@ -114,8 +117,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
                       parms = parameters, method = 'rk4',
                       Area_linear = Area_linear, Volume_linear = Volume_linear,
                       Temp_linear = Temp_linear)
-    # Output_ode[, 2]
-
+    
     Output <- cbind(Output, Output_ode[, 2])
   }
     
@@ -140,27 +142,6 @@ consume_oxygen <- function(thermal_subset, method, trophy,
   return(df)
 }
 
-summarize_oxy <- function(oxygen_data, lake_id){
-  
-  df <- oxygen_data %>%
-    group_by(Time) %>%
-    summarise(oxygen_mean = mean(value),
-              oxygen_median = median(value),
-              oxygen_sd = sd(value),
-              oxygen_upperPercentile = quantile(value, probs = c(0.975)),
-              oxygen_lowerPercentile = quantile(value, probs = c(0.025)),
-              trophic_state = 'oligotrophic') %>%
-    rename(datetime = Time)
-  
-  tar_delete(starts_with(paste0("oxygen_iteration_", lake_id)))
-  tar_delete(starts_with(paste0("oxygen_iteration_batch_", lake_id)))
-  
-  tar_invalidate(starts_with(paste0("oxygen_iteration_", lake_id)))
-  tar_invalidate(starts_with(paste0("oxygen_iteration_batch_", lake_id)))
-  
-  df
-  
-}
 
 # Model code
 o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
