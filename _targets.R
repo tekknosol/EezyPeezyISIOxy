@@ -54,7 +54,7 @@ stratification_batches <- 10 # Number of batches of stratification events per la
 
 # target list:
 lakes <- tibble(
- lake_id = list.files(here(lake_folder), full.names = F)[1]
+ lake_id = list.files(here(lake_folder), full.names = F)
 )
 
 targets <- tar_map(
