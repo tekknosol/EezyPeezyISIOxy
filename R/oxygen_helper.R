@@ -50,8 +50,14 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
 run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
                              iterations = 100){
 
-  id_na <- which(is.na(thermal_data$stratified))
-  thermal_data_reduced <- thermal_data[-id_na, ]
+  # This filtering is done directly in the target workflow  
+  # id_na <- which(is.na(thermal_data$stratified))
+  # thermal_data_reduced <- thermal_data[-id_na, ]
+  
+  # thermal_data is a tibble where each row contains a list of stratification event.
+  # This is necessary because of the target workflow
+  # bind_row re-structures it into a tibble
+  thermal_data_reduced <- thermal_data$data %>% bind_rows()
 
   oxygen_df <- c()
 
@@ -68,7 +74,7 @@ run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
 
     oxygen_df <- rbind(oxygen_df, model_output)
 
-    message(paste0('Finished running ',match(i,unique(thermal_data_reduced$strat_id)),' out of ', length(unique(thermal_data_reduced$strat_id)),'.'))
+    # message(paste0('Finished running ',match(i,unique(thermal_data_reduced$strat_id)),' out of ', length(unique(thermal_data_reduced$strat_id)),'.'))
   }
 
   return(oxygen_df)
@@ -91,9 +97,10 @@ get_prior <- function(trophy){
   return(c(Flux = Flux, Khalf = Khalf, Theta = Theta))
 }
 
-consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
-                           iterations){
-
+consume_oxygen <- function(thermal_subset, method, trophy,
+                           iterations, strat_id){
+  # strat_id <- thermal_subset$strat_id
+  
   Time_linear <- seq(1, nrow(thermal_subset), 1)
   Area_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_area, method = "linear", rule = 2)
   Volume_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_volume, method = "linear", rule = 2)
@@ -102,6 +109,7 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
   yini <- c(cO2 = o2.at.sat.base(temp = thermal_subset$hypo_temp[1], altitude = 500)) # g/m3
 
   Output = c(NULL)
+  
   for (k in 1:iterations){
     parameters <- get_prior(trophy = trophy)
 
@@ -109,10 +117,10 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
                       parms = parameters, method = 'rk4',
                       Area_linear = Area_linear, Volume_linear = Volume_linear,
                       Temp_linear = Temp_linear)
-
+    
     Output <- cbind(Output, Output_ode[, 2])
   }
-
+    
   Output_df = data.frame('Time' = thermal_subset$datetime, Output)
 
   m.Output_df = pivot_longer(Output_df, 2:last_col())
@@ -134,6 +142,7 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
   return(df)
 }
 
+
 # Model code
 o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
   with(as.list(c(State, Pars)), {
@@ -150,17 +159,19 @@ o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear)
   })
 }
 
-save_model_output <- function(lake_id, working_folder, oxygen_output){
+save_model_output <- function(oxygen_output, lake_id){
 
   oxygen_output$lake_id <- lake_id
 
   # write_csv(file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.csv'), x = oxygen_output)
-  saveRDS(object = oxygen_output, file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.rds'))
+  filename <- paste0("results/oxygen/oxygen_", lake_id,".rds")
+  saveRDS(object = oxygen_output, file = filename)
 
-  message('Output saved.')
+  return(filename)
+  # message('Output saved.')
 }
 
-create_plot <- function(lake_id, working_folder, oxygen_output){
+create_plot <- function(oxygen_output, lake_id, working_folder){
 
   oxygen_output$year <- year(oxygen_output$datetime)
   ggplot(oxygen_output) +
@@ -172,10 +183,11 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
     facet_wrap(~ year, scales = 'free') +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot.png'),
-         width = 10, height = 10, units = 'in')
+  filename1 <- paste0('results/plots/oxygen/', lake_id, '_oxygen_plot.jpg')
+  ggsave(filename = filename1,
+         width = 10, height = 10, units = 'in', bg = "white")
 
   ggplot(subset(oxygen_output, year >= 2010)) +
     geom_point(aes(datetime, oxygen_mean, col = 'mean'), lwd = 1.5) +
@@ -185,10 +197,63 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_upperPercentile, col = '97.5'), lwd = 1.5) +
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot_recent.png'), width = 7,
-         height = 3, units = 'in')
+  filename2 <- paste0('results/plots/oxygen/', lake_id,'_oxygen_plot_recent.jpg')
+  ggsave(filename =  filename2, width = 7,
+         height = 3, units = 'in', bg = "white")
+  
+  
+  c(filename1, filename2)
+  
+  # lake_id
 
-  message('Plots saved.')
+  # message('Plots saved.')
+}
+
+
+save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
+
+  years <- rev(sort(unique(year(observed$Date[which(year(observed$Date)<2020)]))))
+  years <-  years[1:min(20, length(years))]
+  
+  plot_df <- oxygen_data %>% 
+    filter(year(datetime) %in% years) %>% 
+    mutate(datetime = as_date(datetime))
+  
+  plot_df2 <- observed %>% 
+    filter(year(Date) %in% years) %>% 
+    filter(!is.na(DO_mgL)) %>% 
+    group_by(Date) %>% 
+    filter(Depth_m == max(Depth_m)) %>% 
+    ungroup() %>% 
+    select(datetime = Date, DO_mgL)
+  
+  ggplot()+
+    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = strat_id))+
+    geom_line(data = plot_df, aes(datetime, oxygen_mean, group = strat_id, color = "modelled"))+
+    geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "Observed"))+
+    scale_fill_manual(name = NULL, values = c("grey"))+
+    scale_color_discrete(name = NULL, labels = c("Modelled", "Observed"))+
+    facet_wrap(~year(datetime), scales = "free")+
+    theme_bw()
+  
+  
+  filename1 <- paste0('results/plots/qc/', 'oxygen_', lake_id,'.jpg')
+  ggsave(filename = filename1,
+         width = 15, height = 10, units = 'in', bg = "white")
+  
+  filename1
+}
+
+read_observations <- function(lake_id){
+  
+  lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
+  
+  id_lookup <- read_csv(here("data/ID_ODtest.csv"))
+  
+  hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
+  
+  read_rds("data/observed.rds") %>% 
+    filter(hylak_id == hylakid)
 }

@@ -11,6 +11,41 @@ https://www.youtube.com/watch?v=B-FHx4l1BNU
 
 <a href="url"><img src="OxygenTest.png" width=80% height=80% ></a>
 
+## Instructions
+
+The workflow is implemented using the [`targets` package](https://books.ropensci.org/targets/).
+The file `_targets.R` contains the workflow and sets some configuration options.
+To run it you have to install the following packages:
+
+```R
+install.packages(
+  c(
+    "targets", 
+    "tarchetypes", 
+    "here", 
+    "tibble", 
+    "ncdf4", 
+    "readr", 
+    "dplyr", 
+    "rLakeAnalyzer", 
+    "pracma", 
+    "LakeMetabolizer", 
+    "deSolve",
+    "tidyr",
+    "lubridate",
+    "ggplot2",
+    "stringr",
+    "here",
+    "qs"
+  )
+)
+```
+You can run the workflow using `targets::tar_make()`.
+
+For parallel processing you need to install the `clustermq` package according to the [instructions](https://github.com/mschubert/clustermq/blob/master/README.md#installation).
+
+To run the script in parallel on your local machine use `targets::tar_make_clustermq(workers = 5)`. Make sure you set the option for `clustermq.scheduler` to 'multicore' or 'multiprocess'.
+
 ## Flowchart
 
 ```mermaid

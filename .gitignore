@@ -3,4 +3,5 @@
 .RData
 .Ruserdata
 EezyPeezyISIOxy.Rproj
-_targets
+_targets/
+R/private
