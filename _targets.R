@@ -37,9 +37,9 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-options(clustermq.scheduler = "multicore") # parallel processing on local machine
-# options(clustermq.scheduler = "slurm") # Slurm on HPC
-# options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+# options(clustermq.scheduler = "multicore") # parallel processing on local machine
+options(clustermq.scheduler = "slurm") # Slurm on HPC
+options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions
 source("R/thermal_script.R")
