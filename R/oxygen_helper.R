@@ -48,7 +48,7 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
 }
 
 run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
-                             iterations = 100){
+                             iterations = 100, params = NULL){
 
   # This filtering is done directly in the target workflow  
   # id_na <- which(is.na(thermal_data$stratified))
@@ -70,7 +70,7 @@ run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
     }
 
     model_output <- consume_oxygen(thermal_subset = data_to_model, method = method, strat_id = i,
-                                   trophy = trophy, iterations = iterations)
+                                   trophy = trophy, iterations = iterations, params)
 
     oxygen_df <- rbind(oxygen_df, model_output)
 
@@ -80,25 +80,25 @@ run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
   return(oxygen_df)
 }
 
-get_prior <- function(trophy){
+get_prior <- function(trophy, n = 1){
   if (trophy == 'oligo'){
 
-    Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d)
-    Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
-    Theta <- rnorm(1, mean = 1.07, sd = 0.03)
+    Flux <- rnorm(n, mean = -0.32, sd = 0.096)  # (g / m2 / d)
+    Khalf <- rnorm(n, mean = 0.224, sd = 0.032)   # (g / m3)
+    Theta <- rnorm(n, mean = 1.07, sd = 0.03)
 
   } else if (trophy == 'eutro'){
 
-    Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d)
-    Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
-    Theta <- rnorm(1, mean = 1.07, sd = 0.03)
+    Flux <- rnorm(n, mean = -3.2, sd = 0.096)  # (g / m2 / d)
+    Khalf <- rnorm(n, mean = 0.224, sd = 0.032)   # (g / m3)
+    Theta <- rnorm(n, mean = 1.08, sd = 0.03)
 
   }
-  return(c(Flux = Flux, Khalf = Khalf, Theta = Theta))
+  return(tibble(Flux = Flux, Khalf = Khalf, Theta = Theta, trophic_state = trophy))
 }
 
 consume_oxygen <- function(thermal_subset, method, trophy,
-                           iterations, strat_id){
+                           iterations, strat_id, params = NULL){
   # strat_id <- thermal_subset$strat_id
   
   Time_linear <- seq(1, nrow(thermal_subset), 1)
@@ -109,9 +109,10 @@ consume_oxygen <- function(thermal_subset, method, trophy,
   yini <- c(cO2 = o2.at.sat.base(temp = thermal_subset$hypo_temp[1], altitude = 500)) # g/m3
 
   Output = c(NULL)
-  
+  if (!is.null(params)) {params <- params %>% filter(trophic_state == trophy)}
   for (k in 1:iterations){
-    parameters <- get_prior(trophy = trophy)
+    # parameters <- get_prior(trophy = trophy)
+    parameters <- params[k,]
 
     Output_ode <- ode(times = Time_linear, y = yini, func = o2_model,
                       parms = parameters, method = 'rk4',
@@ -134,7 +135,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
               oxygen_sd = sd(value),
               oxygen_upperPercentile = quantile(value, probs = c(0.975)),
               oxygen_lowerPercentile = quantile(value, probs = c(0.025)),
-              tropic_state = 'oligotrophic') %>%
+              trophic_state = trophy) %>%
     rename(datetime = Time)
 
   df$strat_id <- strat_id
@@ -230,13 +231,17 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
     select(datetime = Date, DO_mgL)
   
   ggplot()+
-    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = strat_id))+
-    geom_line(data = plot_df, aes(datetime, oxygen_mean, group = strat_id, color = "modelled"))+
-    geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "Observed"))+
+    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)))+
+    geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
+    geom_point(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
+    geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+
     scale_fill_manual(name = NULL, values = c("grey"))+
-    scale_color_discrete(name = NULL, labels = c("Modelled", "Observed"))+
+    scale_color_brewer(name = NULL, palette = "Set1", labels = c("Model Eutrophic", "Model Oligotrophic", "Observed"))+
     facet_wrap(~year(datetime), scales = "free")+
-    theme_bw()
+    scale_x_date(date_labels = "%m")+
+    labs(x = "Month", y = "Oxygen (mg L⁻¹)")+
+    theme_bw()+
+    theme(legend.position = "bottom")
   
   
   filename1 <- paste0('results/plots/qc/', 'oxygen_', lake_id,'.jpg')
