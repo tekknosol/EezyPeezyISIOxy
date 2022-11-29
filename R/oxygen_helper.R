@@ -121,9 +121,9 @@ consume_oxygen <- function(thermal_subset, method, trophy,
                         Temp_linear = Temp_linear)
       
       Output <- cbind(Output, Output_ode[, 2])
-    } else if (method == 'patankar-rk4'){
+    } else if (method == 'patankar-rk2'){
       
-      Output_ode <- o2_model_patankarrk4(times = Time_linear, y = yini,
+      Output_ode <- o2_model_patankarrk2(times = Time_linear, y = yini,
                         parms = parameters,
                         Area_linear = Area_linear, Volume_linear = Volume_linear,
                         Temp_linear = Temp_linear)
@@ -132,7 +132,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
       
     } else {
       
-      warning('No numerical scheme selected! Please choose either rk4 or patankar-rk4.')
+      warning('No numerical scheme selected! Please choose either rk4 or patankar-rk2.')
 
       }
 
@@ -182,7 +182,7 @@ o2_model_rk4 <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_lin
   })
 }
 
-o2_model_patankarrk4 <- function(times, y, parms, Area_linear, Temp_linear, Volume_linear,
+o2_model_patankarrk2 <- function(times, y, parms, Area_linear, Temp_linear, Volume_linear,
                                  dt = 1) {
     # cO2 <- y
   

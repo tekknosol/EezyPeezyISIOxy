@@ -17,7 +17,7 @@ working_folder = 'ObsDOTest'
 lake_id = 'ob13083'
 trophy = 'eutro'
 iterations = 3
-method = 'patankar-rk4'
+method = 'patankar-rk2'
 
 hypsography_data <- get_hypsography(lake_id = lake_id,
                                working_folder = working_folder)
