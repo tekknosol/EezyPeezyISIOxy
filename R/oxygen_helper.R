@@ -113,13 +113,29 @@ consume_oxygen <- function(thermal_subset, method, trophy,
   for (k in 1:iterations){
     # parameters <- get_prior(trophy = trophy)
     parameters <- params[k,]
-
-    Output_ode <- ode(times = Time_linear, y = yini, func = o2_model,
-                      parms = parameters, method = 'rk4',
-                      Area_linear = Area_linear, Volume_linear = Volume_linear,
-                      Temp_linear = Temp_linear)
     
-    Output <- cbind(Output, Output_ode[, 2])
+    if (method == 'rk4'){
+      Output_ode <- ode(times = Time_linear, y = yini, func = o2_model_rk4,
+                        parms = parameters, method = 'rk4',
+                        Area_linear = Area_linear, Volume_linear = Volume_linear,
+                        Temp_linear = Temp_linear)
+      
+      Output <- cbind(Output, Output_ode[, 2])
+    } else if (method == 'patankar-rk2'){
+      
+      Output_ode <- o2_model_patankarrk2(times = Time_linear, y = yini,
+                        parms = parameters,
+                        Area_linear = Area_linear, Volume_linear = Volume_linear,
+                        Temp_linear = Temp_linear)
+      
+      Output <- cbind(Output, Output_ode)
+      
+    } else {
+      
+      warning('No numerical scheme selected! Please choose either rk4 or patankar-rk2.')
+
+      }
+
   }
     
   Output_df = data.frame('Time' = thermal_subset$datetime, Output)
@@ -145,7 +161,13 @@ consume_oxygen <- function(thermal_subset, method, trophy,
 
 
 # Model code
-o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
+dcdt <- function(SedimentFlux, MichaelisMenten, ArrheniusCorrection, Volume){
+  dc <- SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume
+  
+  return(dc)
+}
+
+o2_model_rk4 <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
   with(as.list(c(State, Pars)), {
     # cO2 <- y
 
@@ -158,6 +180,74 @@ o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear)
 
     return(list(c(dcO2)))
   })
+}
+
+o2_model_patankarrk2 <- function(times, y, parms, Area_linear, Temp_linear, Volume_linear,
+                                 dt = 1) {
+    # cO2 <- y
+  
+    parms <- get_prior(trophy = 'eutro')
+    
+    Flux = parms['Flux']
+    Khalf = parms['Khalf']
+    Theta = parms['Theta']
+    
+    dcO2 <- rep(NA, length(times))
+    dcO2[1] <- y
+    
+    len_y0 = length(c(y))
+    eye = diag(len_y0)
+    eye = ifelse(eye == 1, TRUE, FALSE)
+    eyetilde = ifelse(eye == 1, FALSE, TRUE)
+    avec = eye * 0
+    r = avec[,1] * 0
+    
+    for (i in times[2: length(times)]){
+      
+      SedimentFlux    <- Area_linear(i) * Flux # m2 * g/m2/d
+      MichaelisMenten   <- ((dcO2[i - 1]) / (Khalf + dcO2[i - 1])) # g/m3 / g/m3
+      ArrheniusCorrection <- Theta^(Temp_linear(i) - 20) # -
+      
+      p0 = 1e-10
+      d0 = abs(SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(i))
+      
+      ydat <- dcO2[i - 1]
+      
+      avec[eye] <- dt * d0 / ydat + 1
+      
+      c_rep = ydat
+      
+      avec[eyetilde] = -dt * p0 / c_rep[eyetilde]
+      
+      r =  ydat + dt * p0[eye]
+      
+      cproxy = solve(as.numeric(avec), r)
+      
+      
+      SedimentFlux    <- Area_linear(i) * Flux # m2 * g/m2/d
+      MichaelisMenten   <- ((cproxy) / (Khalf + cproxy)) # g/m3 / g/m3
+      ArrheniusCorrection <- Theta^(Temp_linear(i) - 20) # -
+      
+      p1 = 1e-10
+      d1 =  abs(SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(i))
+      
+      p = 0.5 * (p0 + p1)
+      d = 0.5 * (d0 + d1)
+      
+      avec[eye] = dt * d / cproxy + 1
+      
+      c_rep = cproxy
+      
+      avec[eyetilde] = -dt * p / c_rep[eyetilde]
+      
+      r = ydat + dt * p[eye]
+      
+      dcO2[match(i, times)] = solve(as.numeric(avec), r)
+    }
+    
+    # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
+    
+    return(dcO2)
 }
 
 save_model_output <- function(oxygen_output, lake_id){
