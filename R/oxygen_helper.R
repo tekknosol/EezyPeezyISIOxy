@@ -48,10 +48,16 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
 }
 
 run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
-                             iterations = 100){
+                             iterations = 100, params = NULL){
 
-  id_na <- which(is.na(thermal_data$stratified))
-  thermal_data_reduced <- thermal_data[-id_na, ]
+  # This filtering is done directly in the target workflow  
+  # id_na <- which(is.na(thermal_data$stratified))
+  # thermal_data_reduced <- thermal_data[-id_na, ]
+  
+  # thermal_data is a tibble where each row contains a list of stratification event.
+  # This is necessary because of the target workflow
+  # bind_row re-structures it into a tibble
+  thermal_data_reduced <- thermal_data$data %>% bind_rows()
 
   oxygen_df <- c()
 
@@ -64,36 +70,37 @@ run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
     }
 
     model_output <- consume_oxygen(thermal_subset = data_to_model, method = method, strat_id = i,
-                                   trophy = trophy, iterations = iterations)
+                                   trophy = trophy, iterations = iterations, params)
 
     oxygen_df <- rbind(oxygen_df, model_output)
 
-    message(paste0('Finished running ',match(i,unique(thermal_data_reduced$strat_id)),' out of ', length(unique(thermal_data_reduced$strat_id)),'.'))
+    # message(paste0('Finished running ',match(i,unique(thermal_data_reduced$strat_id)),' out of ', length(unique(thermal_data_reduced$strat_id)),'.'))
   }
 
   return(oxygen_df)
 }
 
-get_prior <- function(trophy){
+get_prior <- function(trophy, n = 1){
   if (trophy == 'oligo'){
 
-    Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d)
-    Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
-    Theta <- rnorm(1, mean = 1.07, sd = 0.03)
+    Flux <- rnorm(n, mean = -0.32, sd = 0.096)  # (g / m2 / d)
+    Khalf <- rnorm(n, mean = 0.224, sd = 0.032)   # (g / m3)
+    Theta <- rnorm(n, mean = 1.07, sd = 0.03)
 
   } else if (trophy == 'eutro'){
 
-    Flux <- rnorm(1, mean = -0.32, sd = 0.096)  # (g / m2 / d)
-    Khalf <- rnorm(1, mean = 0.224, sd = 0.032)   # (g / m3)
-    Theta <- rnorm(1, mean = 1.07, sd = 0.03)
+    Flux <- rnorm(n, mean = -3.2, sd = 0.096)  # (g / m2 / d)
+    Khalf <- rnorm(n, mean = 0.224, sd = 0.032)   # (g / m3)
+    Theta <- rnorm(n, mean = 1.08, sd = 0.03)
 
   }
-  return(c(Flux = Flux, Khalf = Khalf, Theta = Theta))
+  return(tibble(Flux = Flux, Khalf = Khalf, Theta = Theta, trophic_state = trophy))
 }
 
-consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
-                           iterations){
-
+consume_oxygen <- function(thermal_subset, method, trophy,
+                           iterations, strat_id, params = NULL){
+  # strat_id <- thermal_subset$strat_id
+  
   Time_linear <- seq(1, nrow(thermal_subset), 1)
   Area_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_area, method = "linear", rule = 2)
   Volume_linear <- approxfun(x = Time_linear, y = thermal_subset$hypo_volume, method = "linear", rule = 2)
@@ -102,17 +109,35 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
   yini <- c(cO2 = o2.at.sat.base(temp = thermal_subset$hypo_temp[1], altitude = 500)) # g/m3
 
   Output = c(NULL)
+  if (!is.null(params)) {params <- params %>% filter(trophic_state == trophy)}
   for (k in 1:iterations){
-    parameters <- get_prior(trophy = trophy)
+    # parameters <- get_prior(trophy = trophy)
+    parameters <- params[k,]
+    
+    if (method == 'rk4'){
+      Output_ode <- ode(times = Time_linear, y = yini, func = o2_model_rk4,
+                        parms = parameters, method = 'rk4',
+                        Area_linear = Area_linear, Volume_linear = Volume_linear,
+                        Temp_linear = Temp_linear)
+      
+      Output <- cbind(Output, Output_ode[, 2])
+    } else if (method == 'patankar-rk2'){
+      
+      Output_ode <- o2_model_patankarrk2(times = Time_linear, y = yini,
+                        parms = parameters,
+                        Area_linear = Area_linear, Volume_linear = Volume_linear,
+                        Temp_linear = Temp_linear)
+      
+      Output <- cbind(Output, Output_ode)
+      
+    } else {
+      
+      warning('No numerical scheme selected! Please choose either rk4 or patankar-rk2.')
 
-    Output_ode <- ode(times = Time_linear, y = yini, func = o2_model,
-                      parms = parameters, method = 'rk4',
-                      Area_linear = Area_linear, Volume_linear = Volume_linear,
-                      Temp_linear = Temp_linear)
+      }
 
-    Output <- cbind(Output, Output_ode[, 2])
   }
-
+    
   Output_df = data.frame('Time' = thermal_subset$datetime, Output)
 
   m.Output_df = pivot_longer(Output_df, 2:last_col())
@@ -126,7 +151,7 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
               oxygen_sd = sd(value),
               oxygen_upperPercentile = quantile(value, probs = c(0.975)),
               oxygen_lowerPercentile = quantile(value, probs = c(0.025)),
-              tropic_state = 'oligotrophic') %>%
+              trophic_state = trophy) %>%
     rename(datetime = Time)
 
   df$strat_id <- strat_id
@@ -134,8 +159,15 @@ consume_oxygen <- function(thermal_subset, method, strat_id, trophy,
   return(df)
 }
 
+
 # Model code
-o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
+dcdt <- function(SedimentFlux, MichaelisMenten, ArrheniusCorrection, Volume){
+  dc <- SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume
+  
+  return(dc)
+}
+
+o2_model_rk4 <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
   with(as.list(c(State, Pars)), {
     # cO2 <- y
 
@@ -150,17 +182,87 @@ o2_model <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear)
   })
 }
 
-save_model_output <- function(lake_id, working_folder, oxygen_output){
+o2_model_patankarrk2 <- function(times, y, parms, Area_linear, Temp_linear, Volume_linear,
+                                 dt = 1) {
+    # cO2 <- y
+  
+    parms <- get_prior(trophy = 'eutro')
+    
+    Flux = parms['Flux']
+    Khalf = parms['Khalf']
+    Theta = parms['Theta']
+    
+    dcO2 <- rep(NA, length(times))
+    dcO2[1] <- y
+    
+    len_y0 = length(c(y))
+    eye = diag(len_y0)
+    eye = ifelse(eye == 1, TRUE, FALSE)
+    eyetilde = ifelse(eye == 1, FALSE, TRUE)
+    avec = eye * 0
+    r = avec[,1] * 0
+    
+    for (i in times[2: length(times)]){
+      
+      SedimentFlux    <- Area_linear(i) * Flux # m2 * g/m2/d
+      MichaelisMenten   <- ((dcO2[i - 1]) / (Khalf + dcO2[i - 1])) # g/m3 / g/m3
+      ArrheniusCorrection <- Theta^(Temp_linear(i) - 20) # -
+      
+      p0 = 1e-10
+      d0 = abs(SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(i))
+      
+      ydat <- dcO2[i - 1]
+      
+      avec[eye] <- dt * d0 / ydat + 1
+      
+      c_rep = ydat
+      
+      avec[eyetilde] = -dt * p0 / c_rep[eyetilde]
+      
+      r =  ydat + dt * p0[eye]
+      
+      cproxy = solve(as.numeric(avec), r)
+      
+      
+      SedimentFlux    <- Area_linear(i) * Flux # m2 * g/m2/d
+      MichaelisMenten   <- ((cproxy) / (Khalf + cproxy)) # g/m3 / g/m3
+      ArrheniusCorrection <- Theta^(Temp_linear(i) - 20) # -
+      
+      p1 = 1e-10
+      d1 =  abs(SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(i))
+      
+      p = 0.5 * (p0 + p1)
+      d = 0.5 * (d0 + d1)
+      
+      avec[eye] = dt * d / cproxy + 1
+      
+      c_rep = cproxy
+      
+      avec[eyetilde] = -dt * p / c_rep[eyetilde]
+      
+      r = ydat + dt * p[eye]
+      
+      dcO2[match(i, times)] = solve(as.numeric(avec), r)
+    }
+    
+    # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
+    
+    return(dcO2)
+}
+
+save_model_output <- function(oxygen_output, lake_id){
 
   oxygen_output$lake_id <- lake_id
 
   # write_csv(file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.csv'), x = oxygen_output)
-  saveRDS(object = oxygen_output, file = paste0(working_folder, '/', lake_id, '/oxygen_info_meta.rds'))
+  filename <- paste0("results/oxygen/oxygen_", lake_id,".rds")
+  saveRDS(object = oxygen_output, file = filename)
 
-  message('Output saved.')
+  return(filename)
+  # message('Output saved.')
 }
 
-create_plot <- function(lake_id, working_folder, oxygen_output){
+create_plot <- function(oxygen_output, lake_id, working_folder){
 
   oxygen_output$year <- year(oxygen_output$datetime)
   ggplot(oxygen_output) +
@@ -172,10 +274,11 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
     facet_wrap(~ year, scales = 'free') +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot.png'),
-         width = 10, height = 10, units = 'in')
+  filename1 <- paste0('results/plots/oxygen/', lake_id, '_oxygen_plot.jpg')
+  ggsave(filename = filename1,
+         width = 10, height = 10, units = 'in', bg = "white")
 
   ggplot(subset(oxygen_output, year >= 2010)) +
     geom_point(aes(datetime, oxygen_mean, col = 'mean'), lwd = 1.5) +
@@ -185,10 +288,67 @@ create_plot <- function(lake_id, working_folder, oxygen_output){
     geom_point(aes(datetime, oxygen_upperPercentile, col = '97.5'), lwd = 1.5) +
     geom_point(aes(datetime, oxygen_lowerPercentile, col = '2.5'), lwd = 1.5) +
     ylab('DO conc. (g/m3)') + xlab("") +
-    theme_minimal()
+    theme_bw()
 
-  ggsave(filename =  paste0(working_folder, '/', lake_id, '/oxygen_plot_recent.png'), width = 7,
-         height = 3, units = 'in')
+  filename2 <- paste0('results/plots/oxygen/', lake_id,'_oxygen_plot_recent.jpg')
+  ggsave(filename =  filename2, width = 7,
+         height = 3, units = 'in', bg = "white")
+  
+  
+  c(filename1, filename2)
+  
+  # lake_id
 
-  message('Plots saved.')
+  # message('Plots saved.')
+}
+
+
+save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
+
+  years <- rev(sort(unique(year(observed$Date[which(year(observed$Date)<2020)]))))
+  years <-  years[1:min(20, length(years))]
+  
+  plot_df <- oxygen_data %>% 
+    filter(year(datetime) %in% years) %>% 
+    mutate(datetime = as_date(datetime))
+  
+  plot_df2 <- observed %>% 
+    filter(year(Date) %in% years) %>% 
+    filter(!is.na(DO_mgL)) %>% 
+    group_by(Date) %>% 
+    filter(Depth_m == max(Depth_m)) %>% 
+    ungroup() %>% 
+    select(datetime = Date, DO_mgL)
+  
+  ggplot()+
+    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)))+
+    geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
+    geom_point(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
+    geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+
+    scale_fill_manual(name = NULL, values = c("grey"))+
+    scale_color_brewer(name = NULL, palette = "Set1", labels = c("Model Eutrophic", "Model Oligotrophic", "Observed"))+
+    facet_wrap(~year(datetime), scales = "free")+
+    scale_x_date(date_labels = "%m")+
+    labs(x = "Month", y = "Oxygen (mg L⁻¹)")+
+    theme_bw()+
+    theme(legend.position = "bottom")
+  
+  
+  filename1 <- paste0('results/plots/qc/', 'oxygen_', lake_id,'.jpg')
+  ggsave(filename = filename1,
+         width = 15, height = 10, units = 'in', bg = "white")
+  
+  filename1
+}
+
+read_observations <- function(lake_id){
+  
+  lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
+  
+  id_lookup <- read_csv(here("data/ID_ODtest.csv"))
+  
+  hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
+  
+  read_rds("data/observed.rds") %>% 
+    filter(hylak_id == hylakid)
 }

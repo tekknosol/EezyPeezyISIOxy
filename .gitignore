@@ -4,3 +4,5 @@
 .Ruserdata
 EezyPeezyISIOxy.Rproj
 reports/*.html
+_targets/
+R/private
