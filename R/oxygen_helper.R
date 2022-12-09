@@ -305,7 +305,7 @@ create_plot <- function(oxygen_output, lake_id, working_folder){
 
 save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
 
-  years <- rev(sort(unique(year(observed$Date[which(year(observed$Date)<2020)]))))
+  years <- rev(sort(unique(year(observed$datetime[which(year(observed$datetime)<2020)]))))
   years <-  years[1:min(5, length(years))]
   
   plot_df <- oxygen_data %>% 
@@ -313,12 +313,12 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
     mutate(datetime = as_date(datetime))
   
   plot_df2 <- observed %>% 
-    filter(year(Date) %in% years) %>% 
-    filter(!is.na(DO_mgL)) %>% 
-    group_by(Date) %>% 
-    filter(Depth_m == max(Depth_m)) %>% 
-    ungroup() %>% 
-    select(datetime = Date, DO_mgL)
+    filter(year(datetime) %in% years) %>% 
+    filter(!is.na(DO_mgL)) 
+    # group_by(datetime) %>% 
+    # filter(Depth_m == max(Depth_m)) %>% 
+    # ungroup() %>% 
+    # select(datetime, DO_mgL)
   
   ggplot()+
     geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)))+
@@ -341,7 +341,9 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
   filename1
 }
 
-read_observations <- function(lake_id){
+read_observations <- function(lake_id, thermal){
+  
+  bathy <- read_hypso(here("ObsDOTest", lake_id))
   
   lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
   
@@ -349,6 +351,26 @@ read_observations <- function(lake_id){
   
   hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
   
-  read_rds("data/observed.rds") %>% 
+  obs <- read_rds("data/observed.rds") %>% 
     filter(hylak_id == hylakid)
+  
+  obs <- obs %>% 
+    select(datetime = Date, Depth_m, DO_mgL) %>% 
+    left_join(
+      thermal %>% 
+        select(datetime, thermocline_depth_smooth)
+    ) 
+  
+  obs %>% 
+    # filter(datetime == ymd("2010-01-03")) %>% 
+    na.exclude() %>% 
+    group_by(datetime) %>% 
+    group_modify(~{
+      
+      .x %>% 
+        na.exclude() %>% 
+        summarise(DO_mgL = hypo_oxy(first(thermocline_depth_smooth), DO_mgL, Depth_m, bathy$areas, bathy$depths))
+      
+    }) %>% 
+    ungroup()
 }
