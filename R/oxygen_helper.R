@@ -424,11 +424,12 @@ oxy_qa <- function(oxygen, observations){
     })
 }
 
-oxy_qa_full <- function(oxygen){
+oxy_qa_full <- function(oxygen, observations){
   df <- oxygen %>% 
     mutate(datetime = as_date(datetime)) %>% 
     select(lake_id, datetime, trophic_state, method, oxygen_mean) 
   
   df %>% 
-    pivot_wider(names_from = method, values_from = oxygen_mean)
+    pivot_wider(names_from = method, values_from = oxygen_mean) %>% 
+    left_join(observations)
 }

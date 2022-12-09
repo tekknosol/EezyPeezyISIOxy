@@ -245,26 +245,92 @@ plot_full_qa <- function(...){
   dots <- rlang::list2(...)
   plot_df <- bind_rows(dots)
   
-  a <- ggplot(plot_df, aes(rk4, `patankar-rk2`))+
+  a <- ggplot(plot_df, aes(rk4, `patankar-rk2`, color = trophic_state))+
     geom_point()+
     geom_abline()+
     theme_bw()
   
-  b <- ggplot(plot_df, aes(rk4_zero, `patankar-rk2`))+
+  b <- ggplot(plot_df, aes(rk4_zero, `patankar-rk2`, color = trophic_state))+
     geom_point()+
     geom_abline()+
     theme_bw()
   
-  c <- ggplot(plot_df, aes(rk4, rk4_zero))+
+  c <- ggplot(plot_df, aes(rk4, rk4_zero, color = trophic_state))+
     geom_point()+
     geom_abline()+
     theme_bw()
   
-  plot <- ggpubr::ggarrange(a,b,c, labels = "auto", ncol = 3)
+  plot1 <- ggpubr::ggarrange(
+    a,b,c, 
+    labels = "auto", 
+    ncol = 3, 
+    common.legend = T,
+    legend = "bottom"
+  )
+  
+  plot_df <- plot_df %>% 
+    pivot_longer(any_of(c("rk4", "rk4_zero", "patankar-rk2")))
+  
+  a <- ggplot(plot_df, aes(DO_mgL, value))+
+    geom_point(color = "grey")+
+    stat_summary(geom = "pointrange", aes(x = plyr::round_any(DO_mgL, 1)))+
+    facet_wrap_equal(name~trophic_state, ncol = 2, nrow = 3)+
+    geom_abline()+
+    theme_bw()+
+    labs(x = "Observed DO (mg L⁻¹)", y = "Modelled DO (mg L⁻¹)")
+  
+  
   
   filename1 <- paste0('results/plots/qc/gof_scatter.jpg')
-  ggsave(filename = filename1,
-         width = 10, height = 3, units = 'in', bg = "white")
+  ggsave(plot1, filename = filename1,
+         width = 5, height = 10, units = 'in', bg = "white")
   
-  filename1 
+  filename2 <- paste0('results/plots/qc/gof_scatter2.jpg')
+  ggsave(a, filename = filename2,
+         width = 8, height = 10, units = 'in', bg = "white")
+  
+  c(filename1, filename2)
+}
+
+
+# ----- facets ----------
+library(ggplot2)
+FacetEqualWrap <- ggproto(
+  "FacetEqualWrap", FacetWrap,
+  
+  train_scales = function(self, x_scales, y_scales, layout, data, params) {
+    
+    # doesn't make sense if there is not an x *and* y scale
+    if (is.null(x_scales) || is.null(x_scales)) {
+      stop("X and Y scales required for facet_equal_wrap")
+    }
+    
+    # regular training of scales
+    ggproto_parent(FacetWrap, self)$train_scales(x_scales, y_scales, layout, data, params)
+    
+    # switched training of scales (x and y and y on x)
+    for (layer_data in data) {
+      match_id <- match(layer_data$PANEL, layout$PANEL)
+      
+      x_vars <- intersect(x_scales[[1]]$aesthetics, names(layer_data))
+      y_vars <- intersect(y_scales[[1]]$aesthetics, names(layer_data))
+      
+      SCALE_X <- layout$SCALE_X[match_id]
+      ggplot2:::scale_apply(layer_data, y_vars, "train", SCALE_X, x_scales)
+      
+      SCALE_Y <- layout$SCALE_Y[match_id]
+      ggplot2:::scale_apply(layer_data, x_vars, "train", SCALE_Y, y_scales)
+    }
+    
+  }
+)
+
+facet_wrap_equal <- function(...) {
+  # take advantage of the sanitizing that happens in facet_wrap
+  facet_super <- facet_wrap(...)
+  
+  ggproto(NULL, FacetEqualWrap,
+          shrink = facet_super$shrink,
+          params = facet_super$params
+  )
 }
