@@ -37,9 +37,9 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-# options(clustermq.scheduler = "multicore") # parallel processing on local machine
-options(clustermq.scheduler = "slurm") # Slurm on HPC
-options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+options(clustermq.scheduler = "multicore") # parallel processing on local machine
+# options(clustermq.scheduler = "slurm") # Slurm on HPC
+# options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions
 source("R/thermal_script.R")
@@ -48,8 +48,8 @@ source("R/oxygen_helper.R")
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 1000 # number of iterations for oxygen model
-stratification_batches <- 5 # Number of batches of stratification events per lake
+numit <- 3 # number of iterations for oxygen model
+stratification_batches <- 2 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
 
@@ -60,10 +60,11 @@ stratification_batches <- 5 # Number of batches of stratification events per lak
 # )
 
 lakes <- tibble(
-  lake_id = list.files(here(lake_folder), full.names = F)
+  lake_id = list.files(here(lake_folder), full.names = F)[1]
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"))
+glob_methods <- tar_target(methods, c("rk4", "patankar-rk2"))
 glob_params <- tar_target(oxy_params, get_prior(trophy, n = numit), pattern = trophy)
 
 
@@ -88,12 +89,12 @@ targets <- tar_map(
   tar_target(oxygen,
              run_oxygen_model(
                thermal_to_model,
-                method = "rk4",
+                method = methods, # rk4, patankar-rk2
                 trophy = trophy,
                 iterations = numit,
                params = oxy_params
               ),
-      pattern = cross(thermal_to_model, trophy)
+      pattern = cross(thermal_to_model, trophy, methods)
     ),
 
   # store results of oxygen model in results folder
@@ -106,4 +107,4 @@ targets <- tar_map(
   tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file")
 )
 
-list(glob_trophy, glob_params, targets)
+list(glob_trophy, glob_methods, glob_params, targets)

@@ -151,7 +151,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
               oxygen_sd = sd(value),
               oxygen_upperPercentile = quantile(value, probs = c(0.975)),
               oxygen_lowerPercentile = quantile(value, probs = c(0.025)),
-              trophic_state = trophy) %>%
+              trophic_state = trophy, method = method) %>%
     rename(datetime = Time)
 
   df$strat_id <- strat_id
@@ -186,7 +186,7 @@ o2_model_patankarrk2 <- function(times, y, parms, Area_linear, Temp_linear, Volu
                                  dt = 1) {
     # cO2 <- y
   
-    parms <- get_prior(trophy = 'eutro')
+    # parms <- get_prior(trophy = 'eutro')
     
     Flux = parms['Flux']
     Khalf = parms['Khalf']
@@ -306,7 +306,7 @@ create_plot <- function(oxygen_output, lake_id, working_folder){
 save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
 
   years <- rev(sort(unique(year(observed$Date[which(year(observed$Date)<2020)]))))
-  years <-  years[1:min(20, length(years))]
+  years <-  years[1:min(5, length(years))]
   
   plot_df <- oxygen_data %>% 
     filter(year(datetime) %in% years) %>% 
@@ -327,7 +327,7 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
     geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+
     scale_fill_manual(name = NULL, values = c("grey"))+
     scale_color_brewer(name = NULL, palette = "Set1", labels = c("Model Eutrophic", "Model Oligotrophic", "Observed"))+
-    facet_wrap(~year(datetime), scales = "free")+
+    facet_wrap(~method, scales = "free", ncol =  1)+
     scale_x_date(date_labels = "%m")+
     labs(x = "Month", y = "Oxygen (mg L⁻¹)")+
     theme_bw()+
