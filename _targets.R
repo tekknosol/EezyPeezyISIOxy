@@ -34,7 +34,7 @@ tar_option_set(storage = "worker", retrieval = "worker") # let workers store and
 # Slurm configs
 tar_option_set(
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(memory = "2G", time = "01:00:00"))
+    clustermq = tar_resources_clustermq(template = list(memory = "2G", time = "02:00:00"))
   )
 )
 
@@ -50,8 +50,8 @@ source("R/oxygen_helper.R")
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 3 # number of iterations for oxygen model
-stratification_batches <- 1 # Number of batches of stratification events per lake
+numit <- 500 # number of iterations for oxygen model
+stratification_batches <- 2 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
 
@@ -62,7 +62,7 @@ stratification_batches <- 1 # Number of batches of stratification events per lak
 # )
 
 lakes <- tibble(
-  lake_id = list.files(here(lake_folder), full.names = F)[1:2]
+  lake_id = list.files(here(lake_folder), full.names = F)
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"))
