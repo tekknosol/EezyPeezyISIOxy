@@ -47,7 +47,7 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
   return(thermo_information)
 }
 
-run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
+run_oxygen_model <- function(thermal_data, lake_id, method = 'rk4', trophy = 'oligo',
                              iterations = 100, params = NULL){
 
   # This filtering is done directly in the target workflow  
@@ -76,6 +76,8 @@ run_oxygen_model <- function(thermal_data, method = 'rk4', trophy = 'oligo',
 
     # message(paste0('Finished running ',match(i,unique(thermal_data_reduced$strat_id)),' out of ', length(unique(thermal_data_reduced$strat_id)),'.'))
   }
+  
+  oxygen_df$lake_id <- lake_id
 
   return(oxygen_df)
 }
@@ -110,12 +112,20 @@ consume_oxygen <- function(thermal_subset, method, trophy,
 
   Output = c(NULL)
   if (!is.null(params)) {params <- params %>% filter(trophic_state == trophy)}
+  start <- Sys.time()
   for (k in 1:iterations){
     # parameters <- get_prior(trophy = trophy)
     parameters <- params[k,]
     
     if (method == 'rk4'){
       Output_ode <- ode(times = Time_linear, y = yini, func = o2_model_rk4,
+                        parms = parameters, method = 'rk4',
+                        Area_linear = Area_linear, Volume_linear = Volume_linear,
+                        Temp_linear = Temp_linear)
+      
+      Output <- cbind(Output, Output_ode[, 2])
+    } else if (method == 'rk4_zero'){
+      Output_ode <- ode(times = Time_linear, y = yini, func = o2_model_rk4_zero,
                         parms = parameters, method = 'rk4',
                         Area_linear = Area_linear, Volume_linear = Volume_linear,
                         Temp_linear = Temp_linear)
@@ -137,6 +147,8 @@ consume_oxygen <- function(thermal_subset, method, trophy,
       }
 
   }
+  end <- Sys.time()
+  runtime <- round(as.numeric(end - start),2)
     
   Output_df = data.frame('Time' = thermal_subset$datetime, Output)
 
@@ -155,6 +167,7 @@ consume_oxygen <- function(thermal_subset, method, trophy,
     rename(datetime = Time)
 
   df$strat_id <- strat_id
+  df$runtime <- runtime
 
   return(df)
 }
@@ -178,6 +191,23 @@ o2_model_rk4 <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_lin
     dcO2        <-  SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(Time)
     # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
 
+    return(list(c(dcO2)))
+  })
+}
+
+o2_model_rk4_zero <- function(Time, State, Pars, Area_linear, Temp_linear, Volume_linear) {
+  with(as.list(c(State, Pars)), {
+    # cO2 <- y
+    
+    SedimentFlux    <- Area_linear(Time) * Flux # m2 * g/m2/d
+    MichaelisMenten   <- ((cO2) / (Khalf + cO2)) # g/m3 / g/m3
+    ArrheniusCorrection <- Theta^(Temp_linear(Time) - 20) # -
+    
+    MichaelisMenten <- max(c(MichaelisMenten, 0))
+    
+    dcO2        <-  SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(Time)
+    # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
+    
     return(list(c(dcO2)))
   })
 }
@@ -305,8 +335,10 @@ create_plot <- function(oxygen_output, lake_id, working_folder){
 
 save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
 
+  nyears <- 6
+  
   years <- rev(sort(unique(year(observed$datetime[which(year(observed$datetime)<2020)]))))
-  years <-  years[1:min(5, length(years))]
+  years <-  years[1:min(nyears, length(years))]
   
   plot_df <- oxygen_data %>% 
     filter(year(datetime) %in% years) %>% 
@@ -327,9 +359,9 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
     geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+
     scale_fill_manual(name = NULL, values = c("grey"))+
     scale_color_brewer(name = NULL, palette = "Set1", labels = c("Model Eutrophic", "Model Oligotrophic", "Observed"))+
-    facet_wrap(~method, scales = "free", ncol =  1)+
-    scale_x_date(date_labels = "%m")+
-    labs(x = "Month", y = "Oxygen (mg L⁻¹)")+
+    facet_wrap(~method, scales = "free_y", ncol =  1)+
+    scale_x_date(date_labels = "%m-%Y", date_breaks = "1 year")+
+    labs(x = "Date", y = "Oxygen (mg L⁻¹)")+
     theme_bw()+
     theme(legend.position = "bottom")
   
@@ -373,4 +405,30 @@ read_observations <- function(lake_id, thermal){
       
     }) %>% 
     ungroup()
+}
+
+
+oxy_qa <- function(oxygen, observations){
+  df <- oxygen %>% 
+    mutate(datetime = as_date(datetime)) %>% 
+    # select(lake_id, datetime, oxygen_mean, trophic_state) %>% 
+    left_join(
+      observations
+    ) 
+  
+  df %>% 
+    group_by(lake_id, method, trophic_state) %>% 
+    group_modify(~{
+      gof <- gof(.x$oxygen_mean, .x$DO_mgL)
+      tibble(names = rownames(gof), gof = gof[,1])
+    })
+}
+
+oxy_qa_full <- function(oxygen, observations){
+  df <- oxygen %>% 
+    mutate(datetime = as_date(datetime)) %>% 
+    select(lake_id, datetime, trophic_state, method, oxygen_mean) 
+  
+  df %>% 
+    pivot_wider(names_from = method, values_from = oxygen_mean)
 }

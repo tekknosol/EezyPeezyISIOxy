@@ -192,3 +192,79 @@ hypo_oxy <- function(thermo, oxy, depths, bthA, bthD){
   aveOxygen <- sum(weightedO)/(sum(layerA))/dz
   return(aveOxygen)
 }
+
+combine_lakes <- function(...){
+  # current <- tibble(...)[[1]]
+  dots <- rlang::list2(...)
+  dots %>% 
+    map_dfr(~{
+      .x %>% group_by(lake_id, trophic_state, method, strat_id) %>%
+        summarise(runtime = first(runtime)) %>% 
+        summarise(runtime = sum(runtime))
+      
+    })
+    
+}
+
+plot_runtimes <- function(runtimes){
+  
+  
+  ggplot(runtimes, aes(method, runtime/60, color = trophic_state))+
+    stat_summary(geom = "pointrange", fun.data = ggpubr::mean_range, position = position_dodge(width = .2))+
+    labs(y = "Runtime (minutes)", x = "Method")+
+    theme_bw()
+  
+  filename1 <- paste0('results/plots/qc/runtime.jpg')
+  ggsave(filename = filename1,
+         width = 15, height = 10, units = 'in', bg = "white")
+  
+  filename1
+}
+
+plot_oxygen_qa <- function(oxygen_qa){
+  
+  criteria <- c("RMSE", "R2")
+  
+  plot_df <- oxygen_qa %>% 
+    filter(names %in% criteria)
+  
+  ggplot(plot_df, aes(trophic_state, gof, fill = method))+
+    geom_boxplot()+
+    facet_grid(names~., scales = "free")+
+    # labs(y = "Runtime (minutes)", x = "Method")+
+    theme_bw()
+  
+  filename1 <- paste0('results/plots/qc/gof.jpg')
+  ggsave(filename = filename1,
+         width = 15, height = 10, units = 'in', bg = "white")
+  
+  filename1
+}
+
+plot_full_qa <- function(...){
+  dots <- rlang::list2(...)
+  plot_df <- bind_rows(dots)
+  
+  a <- ggplot(plot_df, aes(rk4, `patankar-rk2`))+
+    geom_point()+
+    geom_abline()+
+    theme_bw()
+  
+  b <- ggplot(plot_df, aes(rk4_zero, `patankar-rk2`))+
+    geom_point()+
+    geom_abline()+
+    theme_bw()
+  
+  c <- ggplot(plot_df, aes(rk4, rk4_zero))+
+    geom_point()+
+    geom_abline()+
+    theme_bw()
+  
+  plot <- ggpubr::ggarrange(a,b,c, labels = "auto", ncol = 3)
+  
+  filename1 <- paste0('results/plots/qc/gof_scatter.jpg')
+  ggsave(filename = filename1,
+         width = 10, height = 3, units = 'in', bg = "white")
+  
+  filename1 
+}

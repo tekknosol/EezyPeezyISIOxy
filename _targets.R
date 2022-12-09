@@ -20,7 +20,9 @@ tar_option_set(
     "lubridate",
     "ggplot2",
     "stringr",
-    "here"
+    "here", 
+    "purrr",
+    "hydroGOF"
   ), # packages that your targets need to run
   # format = "rds" # default storage format
   format = "qs" # default storage format
@@ -37,9 +39,9 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-options(clustermq.scheduler = "multicore") # parallel processing on local machine
-# options(clustermq.scheduler = "slurm") # Slurm on HPC
-# options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+# options(clustermq.scheduler = "multicore") # parallel processing on local machine
+options(clustermq.scheduler = "slurm") # Slurm on HPC
+options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions
 source("R/thermal_script.R")
@@ -49,7 +51,7 @@ source("R/oxygen_helper.R")
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
 numit <- 3 # number of iterations for oxygen model
-stratification_batches <- 2 # Number of batches of stratification events per lake
+stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
 
@@ -60,16 +62,18 @@ stratification_batches <- 2 # Number of batches of stratification events per lak
 # )
 
 lakes <- tibble(
-  lake_id = list.files(here(lake_folder), full.names = F)[1]
+  lake_id = list.files(here(lake_folder), full.names = F)[1:2]
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"))
-glob_methods <- tar_target(methods, c("rk4", "patankar-rk2"))
+glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"))
+# glob_methods <- tar_target(methods, c("rk4", "rk4_zero"))
 glob_params <- tar_target(oxy_params, get_prior(trophy, n = numit), pattern = trophy)
 
 
 
 targets <- tar_map(
+  unlist = FALSE, # Return a nested list from tar_map()
   values = lakes,
 
   #process thermal module per lake
@@ -89,6 +93,7 @@ targets <- tar_map(
   tar_target(oxygen,
              run_oxygen_model(
                thermal_to_model,
+               lake_id,
                 method = methods, # rk4, patankar-rk2
                 trophy = trophy,
                 iterations = numit,
@@ -100,11 +105,38 @@ targets <- tar_map(
   # store results of oxygen model in results folder
   tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
   # load observations (Abby's lakes)
-  tar_target(observations, read_observations(lake_id)),
+  tar_target(observations, read_observations(lake_id, thermal)),
+  # Model quality
+  tar_target(oxy_quality, oxy_qa(oxygen, observations)),
+  tar_target(oxy_scatter, oxy_qa_full(oxygen, observations)),
   # Create QC plots for oxygen
   tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file"),
   # Create plots of temperature and thermocline depth
   tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file")
 )
 
-list(glob_trophy, glob_methods, glob_params, targets)
+combined <- list(
+  tar_combine(
+    runtimes,
+    targets[[3]],
+    command = combine_lakes(!!!.x)
+  ),
+
+  tar_combine(
+    combined_oxy_qa,
+    targets[[6]],
+    command = bind_rows(!!!.x)
+  ),
+  
+  tar_target(plot_oxy_qa, plot_oxygen_qa(combined_oxy_qa), format = "file"),
+  
+  tar_combine(
+    full_qa,
+    targets[[7]],
+    command = plot_full_qa(!!!.x)
+  )
+)
+
+glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
+
+list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
