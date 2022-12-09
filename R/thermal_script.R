@@ -169,3 +169,26 @@ create_plots_thermal <- function(thermal_data, lake_id, lake_folder){
   
   c(filename1)
 }
+
+hypo_oxy <- function(thermo, oxy, depths, bthA, bthD){
+  
+  dz <- 0.1
+  
+  thermo <- ifelse(is.na(thermo), 0, thermo)
+  
+  if (thermo >= max(depths)){
+    return(NA)
+  }
+  
+  if (length(oxy) < 2){
+    return(NA)
+  }
+  
+  layerD <- seq(thermo, max(bthD), dz)
+  # layerD <- seq(thermo, max(depths), dz)
+  layerO <- stats::approx(depths, oxy, layerD, rule = 2)$y
+  layerA <- stats::approx(bthD, bthA, layerD)$y
+  weightedO <- layerA * layerO * dz
+  aveOxygen <- sum(weightedO)/(sum(layerA))/dz
+  return(aveOxygen)
+}
