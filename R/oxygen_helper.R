@@ -424,7 +424,7 @@ oxy_qa <- function(oxygen, observations){
     })
 }
 
-oxy_qa_full <- function(oxygen, observations){
+oxy_qa_full <- function(oxygen){
   df <- oxygen %>% 
     mutate(datetime = as_date(datetime)) %>% 
     select(lake_id, datetime, trophic_state, method, oxygen_mean) 
