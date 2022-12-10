@@ -245,28 +245,37 @@ plot_full_qa <- function(...){
   dots <- rlang::list2(...)
   plot_df <- bind_rows(dots)
   
-  a <- ggplot(plot_df, aes(rk4, `patankar-rk2`, color = trophic_state))+
-    geom_point()+
-    geom_abline()+
+  plot_df2 <- plot_df %>% 
+    select(any_of(c("rk4", "rk4_zero", "patankar-rk2", "trophic_state")))
+  
+  plot1 <- GGally::ggpairs(plot_df2, columns = 1:(ncol(plot_df2)-1), diag = "blank", aes(color = trophic_state))+
     theme_bw()
   
-  b <- ggplot(plot_df, aes(rk4_zero, `patankar-rk2`, color = trophic_state))+
-    geom_point()+
-    geom_abline()+
-    theme_bw()
-  
-  c <- ggplot(plot_df, aes(rk4, rk4_zero, color = trophic_state))+
-    geom_point()+
-    geom_abline()+
-    theme_bw()
-  
-  plot1 <- ggpubr::ggarrange(
-    a,b,c, 
-    labels = "auto", 
-    ncol = 3, 
-    common.legend = T,
-    legend = "bottom"
-  )
+  # plot_df <- plot_df %>% 
+  #   select
+  # 
+  # a <- ggplot(plot_df, aes(rk4, `patankar-rk2`, color = trophic_state))+
+  #   geom_point()+
+  #   geom_abline()+
+  #   theme_bw()
+  # 
+  # b <- ggplot(plot_df, aes(rk4_zero, `patankar-rk2`, color = trophic_state))+
+  #   geom_point()+
+  #   geom_abline()+
+  #   theme_bw()
+  # 
+  # c <- ggplot(plot_df, aes(rk4, rk4_zero, color = trophic_state))+
+  #   geom_point()+
+  #   geom_abline()+
+  #   theme_bw()
+  # 
+  # plot1 <- ggpubr::ggarrange(
+  #   a,b,c, 
+  #   labels = "auto", 
+  #   ncol = 3, 
+  #   common.legend = T,
+  #   legend = "bottom"
+  # )
   
   plot_df <- plot_df %>% 
     pivot_longer(any_of(c("rk4", "rk4_zero", "patankar-rk2")))
@@ -283,7 +292,7 @@ plot_full_qa <- function(...){
   
   filename1 <- paste0('results/plots/qc/gof_scatter.jpg')
   ggsave(plot1, filename = filename1,
-         width = 5, height = 10, units = 'in', bg = "white")
+         width = 8, height = 8, units = 'in', bg = "white")
   
   filename2 <- paste0('results/plots/qc/gof_scatter2.jpg')
   ggsave(a, filename = filename2,
