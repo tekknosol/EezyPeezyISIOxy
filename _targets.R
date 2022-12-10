@@ -107,8 +107,8 @@ targets <- tar_map(
   # load observations (Abby's lakes)
   tar_target(observations, read_observations(lake_id, thermal)),
   # Model quality
-  tar_target(oxy_quality, oxy_qa(oxygen, observations)),
-  tar_target(oxy_scatter, oxy_qa_full(oxygen, observations)),
+  tar_target(oxy_quality, oxy_qa(oxygen, observations), error = "null"),
+  tar_target(oxy_scatter, oxy_qa_full(oxygen, observations), error = "null"),
   # Create QC plots for oxygen
   tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file", error = "null"),
   # Create plots of temperature and thermocline depth
