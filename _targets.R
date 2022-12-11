@@ -133,7 +133,8 @@ combined <- list(
   tar_combine(
     full_qa,
     targets[[7]],
-    command = plot_full_qa(!!!.x)
+    command = plot_full_qa(!!!.x),
+    format = "file"
   )
 )
 
