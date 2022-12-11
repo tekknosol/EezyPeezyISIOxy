@@ -50,8 +50,8 @@ source("R/oxygen_helper.R")
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 500 # number of iterations for oxygen model
-stratification_batches <- 3 # Number of batches of stratification events per lake
+numit <- 50 # number of iterations for oxygen model
+stratification_batches <- 5 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
 
@@ -66,8 +66,8 @@ lakes <- tibble(
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
-# glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"))
-glob_methods <- tar_target(methods, c("rk4", "rk4_zero"), deployment = "main")
+glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"), deployment = "main")
+# glob_methods <- tar_target(methods, c("rk4", "rk4_zero"), deployment = "main")
 glob_params <- tar_target(oxy_params, get_prior(trophy, n = numit), pattern = trophy, deployment = "main")
 
 
