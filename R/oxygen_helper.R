@@ -203,9 +203,11 @@ o2_model_rk4_zero <- function(Time, State, Pars, Area_linear, Temp_linear, Volum
     MichaelisMenten   <- ((cO2) / (Khalf + cO2)) # g/m3 / g/m3
     ArrheniusCorrection <- Theta^(Temp_linear(Time) - 20) # -
     
-    MichaelisMenten <- max(c(MichaelisMenten, 0))
+    # MichaelisMenten <- max(c(MichaelisMenten, 0))
     
     dcO2        <-  SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(Time)
+    
+    dcO2 <- max(c(dcO2, 0))
     # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
     
     return(list(c(dcO2)))
