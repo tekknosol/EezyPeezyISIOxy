@@ -210,7 +210,7 @@ plot_runtimes <- function(runtimes){
   
   
   ggplot(runtimes, aes(method, runtime/60, color = trophic_state))+
-    stat_summary(geom = "pointrange", fun.data = ggpubr::mean_range, position = position_dodge(width = .2))+
+    stat_summary(geom = "pointrange", fun = mean, fun.min = min, fun.max = max, position = position_dodge(width = .2))+
     labs(y = "Runtime (minutes)", x = "Method")+
     theme_bw()
   
