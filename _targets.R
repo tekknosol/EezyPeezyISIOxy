@@ -34,7 +34,7 @@ tar_option_set(storage = "worker", retrieval = "worker") # let workers store and
 # Slurm configs
 tar_option_set(
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(memory = "2G", time = "04:00:00"))
+    clustermq = tar_resources_clustermq(template = list(memory = "4G", time = "04:00:00"))
   )
 )
 
