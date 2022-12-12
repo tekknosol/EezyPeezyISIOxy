@@ -286,7 +286,7 @@ plot_full_qa <- function(...){
   a <- ggplot(plot_df, aes(DO_mgL, value))+
     geom_point(color = "grey")+
     stat_summary(geom = "pointrange", aes(x = plyr::round_any(DO_mgL, 1)))+
-    facet_wrap_equal(name~trophic_state, ncol = 2, nrow = 3)+
+    facet_wrap_equal(name~trophic_state, ncol = 2, nrow = 3, scales = "free")+
     geom_abline()+
     theme_bw()+
     labs(x = "Observed DO (mg L⁻¹)", y = "Modelled DO (mg L⁻¹)")
