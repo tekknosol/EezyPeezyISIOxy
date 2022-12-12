@@ -420,13 +420,15 @@ oxy_qa <- function(oxygen, observations){
       observations
     ) 
   
-  df %>% 
-    group_by(lake_id, method, trophic_state) %>% 
-    summarise(RMSE = hydroGOF::rmse(oxygen_mean, DO_mgL), R2 = hydroGOF::rPearson(oxygen_mean, DO_mgL)^2)
+  tryCatch({
+    df %>% 
+      group_by(lake_id, method, trophic_state) %>% 
+      summarise(RMSE = hydroGOF::rmse(oxygen_mean, DO_mgL), R2 = hydroGOF::rPearson(oxygen_mean, DO_mgL)^2)
     # group_modify(~{
     #   gof <- gof(.x$oxygen_mean, .x$DO_mgL)
     #   tibble(names = rownames(gof), gof = gof[,1])
     # })
+  }, error = function(e){return(NULL)})
 }
 
 oxy_qa_full <- function(oxygen, observations){
