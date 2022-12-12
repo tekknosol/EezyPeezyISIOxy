@@ -50,7 +50,7 @@ source("R/oxygen_helper.R")
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 3 # number of iterations for oxygen model
+numit <- 25 # number of iterations for oxygen model
 stratification_batches <- 3 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
