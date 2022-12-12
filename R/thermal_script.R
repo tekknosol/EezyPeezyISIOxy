@@ -280,16 +280,16 @@ plot_full_qa <- function(...){
   #   legend = "bottom"
   # )
   
-  # plot_df <- plot_df %>% 
-  #   pivot_longer(any_of(c("rk4", "rk4_zero", "patankar-rk2")))
-  # 
-  # a <- ggplot(plot_df, aes(DO_mgL, value))+
-  #   geom_point(color = "grey")+
-  #   stat_summary(geom = "pointrange", aes(x = plyr::round_any(DO_mgL, 1)))+
-  #   facet_wrap_equal(name~trophic_state, ncol = 2, nrow = 3)+
-  #   geom_abline()+
-  #   theme_bw()+
-  #   labs(x = "Observed DO (mg L⁻¹)", y = "Modelled DO (mg L⁻¹)")
+  plot_df <- plot_df %>%
+    pivot_longer(any_of(c("rk4", "rk4_zero", "patankar-rk2")))
+
+  a <- ggplot(plot_df, aes(DO_mgL, value))+
+    geom_point(color = "grey")+
+    stat_summary(geom = "pointrange", aes(x = plyr::round_any(DO_mgL, 1)))+
+    facet_wrap_equal(name~trophic_state, ncol = 2, nrow = 3)+
+    geom_abline()+
+    theme_bw()+
+    labs(x = "Observed DO (mg L⁻¹)", y = "Modelled DO (mg L⁻¹)")
   
   
   
@@ -297,12 +297,12 @@ plot_full_qa <- function(...){
   ggsave(plot1, filename = filename1,
          width = 8, height = 8, units = 'in', bg = "white")
   
-  # filename2 <- paste0('results/plots/qc/gof_scatter2.jpg')
-  # ggsave(a, filename = filename2,
-  #        width = 8, height = 10, units = 'in', bg = "white")
+  filename2 <- paste0('results/plots/qc/gof_scatter2.jpg')
+  ggsave(a, filename = filename2,
+         width = 8, height = 10, units = 'in', bg = "white")
   
-  c(filename1)
-  # c(filename1, filename2)
+  # c(filename1)
+  c(filename1, filename2)
 }
 
 
