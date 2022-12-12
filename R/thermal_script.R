@@ -281,6 +281,7 @@ plot_full_qa <- function(...){
   # )
   
   plot_df <- plot_df %>%
+    na.exclude() %>% 
     pivot_longer(any_of(c("rk4", "rk4_zero", "patankar-rk2")))
 
   a <- ggplot(plot_df, aes(DO_mgL, value))+
