@@ -422,10 +422,11 @@ oxy_qa <- function(oxygen, observations){
   
   df %>% 
     group_by(lake_id, method, trophic_state) %>% 
-    group_modify(~{
-      gof <- gof(.x$oxygen_mean, .x$DO_mgL)
-      tibble(names = rownames(gof), gof = gof[,1])
-    })
+    summarise(RMSE = hydroGOF::rmse(oxygen_mean, DO_mgL), R2 = hydroGOF::rPearson(oxygen_mean, DO_mgL)^2)
+    # group_modify(~{
+    #   gof <- gof(.x$oxygen_mean, .x$DO_mgL)
+    #   tibble(names = rownames(gof), gof = gof[,1])
+    # })
 }
 
 oxy_qa_full <- function(oxygen, observations){
