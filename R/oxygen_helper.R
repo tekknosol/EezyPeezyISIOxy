@@ -203,11 +203,10 @@ o2_model_rk4_zero <- function(Time, State, Pars, Area_linear, Temp_linear, Volum
     MichaelisMenten   <- ((cO2) / (Khalf + cO2)) # g/m3 / g/m3
     ArrheniusCorrection <- Theta^(Temp_linear(Time) - 20) # -
     
-    # MichaelisMenten <- max(c(MichaelisMenten, 0))
+    MichaelisMenten <- max(c(MichaelisMenten, 0))
     
     dcO2        <-  SedimentFlux * MichaelisMenten * ArrheniusCorrection / Volume_linear(Time)
     
-    dcO2 <- max(c(dcO2, 0))
     # m2 g/m2/d g/m3 / g/m3 m3 / m3 / m3 = g/m3/d
     
     return(list(c(dcO2)))
@@ -386,7 +385,10 @@ read_observations <- function(lake_id, thermal){
   hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
   
   obs <- read_rds("data/observed.rds") %>% 
-    filter(hylak_id == hylakid)
+    filter(hylak_id == hylakid) %>%
+    filter(Depth_m >= 0) %>% 
+    filter(DO_mgL >= 0) %>% 
+    filter(DO_mgL < 30)
   
   obs <- obs %>% 
     select(datetime = Date, Depth_m, DO_mgL) %>% 

@@ -209,8 +209,11 @@ combine_lakes <- function(...){
 plot_runtimes <- function(runtimes){
   
   
-  ggplot(runtimes, aes(method, runtime/60, color = trophic_state))+
-    stat_summary(geom = "pointrange", fun = mean, fun.min = min, fun.max = max, position = position_dodge(width = .2))+
+  ggplot(runtimes, aes(method, runtime/60))+
+    geom_boxplot(aes(fill = trophic_state), outlier.shape = NA)+
+    # stat_summary(aes(color = trophic_state), geom = "pointrange", fun = mean, fun.min = min, fun.max = max, position = position_dodge(width = .2))+
+    stat_summary(aes(color = trophic_state), fun.y = max, geom = "point", size = 2, position = position_dodge(width = .75)) +
+    stat_summary(aes(color = trophic_state), fun.y = min, geom = "point", size = 2, position = position_dodge(width = .75)) +
     labs(y = "Runtime (minutes)", x = "Method")+
     theme_bw()
   
