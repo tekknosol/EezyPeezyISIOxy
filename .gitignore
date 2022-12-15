@@ -6,3 +6,4 @@ EezyPeezyISIOxy.Rproj
 reports/*.html
 _targets/
 R/private
+priv_R/
