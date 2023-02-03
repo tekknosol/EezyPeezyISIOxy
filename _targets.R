@@ -42,8 +42,8 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-options(clustermq.scheduler = "multicore") # parallel processing on local machine
-# options(clustermq.scheduler = "slurm") # Slurm on HPC
+# options(clustermq.scheduler = "multicore") # parallel processing on local machine
+options(clustermq.scheduler = "slurm") # Slurm on HPC
 options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions from R subfolder
@@ -69,7 +69,7 @@ lakes <- tibble(
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"), deployment = "main")
 # glob_methods <- tar_target(methods, c("patankar-rk2_c", "lsoda_event", "lsoda"), deployment = "main")
-glob_methods <- tar_target(methods, c("patankar-rk2_c"), deployment = "main")
+glob_methods <- tar_target(methods, c("lsoda_event"), deployment = "main")
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero"), deployment = "main")
 glob_params <- tar_target(oxy_params, get_prior(trophy, n = numit), pattern = trophy, deployment = "main")
 
