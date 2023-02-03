@@ -3,9 +3,9 @@ combine_lakes <- function(...){
   dots <- rlang::list2(...)
   dots %>% 
     map_dfr(~{
-      .x %>% group_by(lake_id, trophic_state, method, strat_id) %>%
-        summarise(runtime = first(runtime)) %>% 
-        summarise(runtime = sum(runtime))
+      .x %>% group_by(lake_id, trophic_state, method) %>%
+        # summarise(runtime = first(runtime)) %>% 
+        summarise(runtime = first(runtime))
       
     })
   

@@ -123,10 +123,12 @@ plot_runtimes <- function(runtimes){
   
   ggplot(runtimes, aes(method, runtime))+
     geom_boxplot(aes(fill = trophic_state), outlier.shape = NA)+
+    geom_point(aes(color = trophic_state), position = position_jitterdodge(jitter.width = .2), alpha = .6)+
     # stat_summary(aes(color = trophic_state), geom = "pointrange", fun = mean, fun.min = min, fun.max = max, position = position_dodge(width = .2))+
-    stat_summary(aes(color = trophic_state), fun.y = max, geom = "point", size = 2, position = position_dodge(width = .75)) +
-    stat_summary(aes(color = trophic_state), fun.y = min, geom = "point", size = 2, position = position_dodge(width = .75)) +
-    labs(y = "Runtime (seconds)", x = "Method")+
+    # stat_summary(aes(color = trophic_state), fun.y = max, geom = "point", size = 2, position = position_dodge(width = .75)) +
+    # stat_summary(aes(color = trophic_state), fun.y = min, geom = "point", size = 2, position = position_dodge(width = .75)) +
+    scale_color_manual(values = c("black", "black"))+
+    labs(y = "Runtime per lake for 100 iterations (seconds)", x = "Method")+
     theme_bw()
   
   filename1 <- paste0('results/plots/qc/runtime.jpg')
@@ -161,7 +163,7 @@ plot_full_qa <- function(...){
   plot_df <- bind_rows(dots)
   
   plot_df2 <- plot_df %>% 
-    select(any_of(c("lsoda", "rk4", "rk4_zero", "patankar-rk2", "patankar-rk2_c", "trophic_state")))
+    select(any_of(c("lsoda","lsoda_event", "lsoda_event_f", "rk4", "rk4_zero", "patankar-rk2", "patankar-rk2_c", "trophic_state")))
   
   plot1 <- GGally::ggpairs(plot_df2, columns = 1:(ncol(plot_df2)-1), diag = "blank", aes(color = trophic_state))+
     theme_bw()
@@ -194,7 +196,7 @@ plot_full_qa <- function(...){
   
   plot_df <- plot_df %>%
     na.exclude() %>% 
-    pivot_longer(any_of(c("lsoda", "rk4", "rk4_zero", "patankar-rk2", "patankar-rk2_c")))
+    pivot_longer(any_of(c("lsoda","lsoda_event", "lsoda_event_f", "rk4", "rk4_zero", "patankar-rk2", "patankar-rk2_c")))
   
   a <- ggplot(plot_df, aes(DO_mgL, value))+
     geom_point(color = "grey")+

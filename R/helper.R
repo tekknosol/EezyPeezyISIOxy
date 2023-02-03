@@ -124,6 +124,28 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
   return(thermo_information)
 }
 
+summarize_oxygen_matrix <- function(oxygen){
+  df <- tibble(
+    oxygen_mean = rowMeans(oxygen),
+    oxygen_median = rowMedians(oxygen),
+    oxygen_sd = rowSds(oxygen),
+    oxygen_upperPercentile = rowQuantiles(oxygen, probs = c(0.975)),
+    oxygen_lowerPercentile = rowQuantiles(oxygen, probs = c(0.025))
+  )
+  return(df)
+}
+
+create_oxygen_output <- function(datetime, strat_id, oxygen){
+  df <- tibble(
+    datetime = datetime,
+    strat_id = thermal_data$strat_id
+  ) %>% 
+    bind_cols(
+      summarize_oxygen_matrix(oxygen)
+    )
+  
+  return(df)
+}
 
 # ----- facets ----------
 library(ggplot2)
