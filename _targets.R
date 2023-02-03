@@ -51,7 +51,7 @@ tar_source()
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 100 # number of iterations for oxygen model
+numit <- 10000 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
@@ -63,7 +63,7 @@ stratification_batches <- 1 # Number of batches of stratification events per lak
 # )
 
 lakes <- tibble(
-  lake_id = list.files(here(lake_folder), full.names = F)[1:1]
+  lake_id = list.files(here(lake_folder), full.names = F)
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
