@@ -13,5 +13,6 @@ get_prior <- function(trophy, n = 1){
     Theta <- rnorm(n, mean = 1.08, sd = 0.03)
     
   }
+  Flux <- sapply(Flux, FUN=min, 0)
   return(tibble(Flux = Flux, Khalf = Khalf, Theta = Theta, trophic_state = trophy))
 }
