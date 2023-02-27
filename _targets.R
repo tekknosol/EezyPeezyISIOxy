@@ -160,5 +160,5 @@ targets <- tar_map(
 
 glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
 
-list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
+# list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
 list(glob_trophy, glob_methods, glob_params, targets, glob_runtime)
