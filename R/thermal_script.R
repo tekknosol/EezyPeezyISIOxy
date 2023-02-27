@@ -10,7 +10,7 @@ thermal_info <- function(lake){
   
   Temp <- read_temp_nc(here("data/isimip/20CRv3-ERA5", temp_pattern))
 
-  hypso <- read_hypso(hypso_pattern)
+  hypso <- read_hypso(here("data/isimip/hypsography", hypso_pattern))
   
   # Calculate Density difference and Stratifcation
   Density.Diff <- water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2])
