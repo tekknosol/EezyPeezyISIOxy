@@ -42,8 +42,8 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-# options(clustermq.scheduler = "multicore") # parallel processing on local machine
-options(clustermq.scheduler = "slurm") # Slurm on HPC
+options(clustermq.scheduler = "multicore") # parallel processing on local machine
+# options(clustermq.scheduler = "slurm") # Slurm on HPC
 options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions from R subfolder
@@ -51,7 +51,7 @@ tar_source()
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 10000 # number of iterations for oxygen model
+numit <- 100 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
@@ -62,8 +62,22 @@ stratification_batches <- 1 # Number of batches of stratification events per lak
 #  trophy = c("oligo", "eutro")
 # )
 
+rafalakes <- read_delim(file = here("data/IDs_1000_lakes.csv"), delim = " ")
+id_lookup <- read_csv(here("data/coord_area_depth.csv"))
+
+id_lookup <- id_lookup %>% 
+  mutate(isimip_id = str_split(id, "_", simplify = T)[,2])
+
+rafalakes <- rafalakes %>% 
+  left_join(
+    id_lookup %>% 
+      select(hydrolakes, isimip_id), 
+    by = c("ID_vector" = "hydrolakes")
+  )
+
 lakes <- tibble(
-  lake_id = list.files(here(lake_folder), full.names = F)
+  # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
+  lake_id = rafalakes$isimip_id[1:1]
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
@@ -80,7 +94,7 @@ targets <- tar_map(
   values = lakes,
 
   #process thermal module per lake
-  tar_target(thermal, thermal_info(here(lake_folder, lake_id))),
+  tar_target(thermal, thermal_info(lake_id)),
 
   # batch computation based on stratification events. Number of batches defined by 'stratification_batches'
   # tar_group_count(

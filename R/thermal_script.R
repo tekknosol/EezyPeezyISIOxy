@@ -1,9 +1,16 @@
 thermal_info <- function(lake){
   # Read Temp & Depth
   
-  Temp <- lake %>% read_temp_nc()
+  modelname <- "20crv3-era5"
+  pre <- "_historical_obsclim_gotm_"
+  post <- "_daily_1901_2019.nc"
+  temp_pattern <- paste0(modelname, pre, lake, post)
+  
+  hypso_pattern <- paste0("h_", lake, ".dat")
+  
+  Temp <- read_temp_nc(here("data/isimip/20CRv3-ERA5", temp_pattern))
 
-  hypso <- lake %>% read_hypso()
+  hypso <- read_hypso(hypso_pattern)
   
   # Calculate Density difference and Stratifcation
   Density.Diff <- water.density(Temp[, ncol(Temp)]) - water.density(Temp[, 2])
@@ -90,7 +97,10 @@ read_temp <- function(lake){
 }
 
 read_temp_nc <- function(lake){
-  ncin <- nc_open(here(lake, "output.nc"))
+  # ncin <- nc_open(here(lake, "output.nc"))
+  
+  ncin <- nc_open(here(lake))
+  
   Temp_raw_nc <- ncvar_get(ncin, "temp")
   Temp_raw_nc <- data.frame(t(Temp_raw_nc))
   tunits <- ncatt_get(ncin, "time", "units")
@@ -110,7 +120,9 @@ read_temp_nc <- function(lake){
 
 read_hypso <- function(lake){
   # Read Hyspograph
-  hypso <- read_delim(here(lake, "hypsograph.dat"), skip = 1, delim = " ", show_col_types = F, col_names = F)
+  # hypso <- read_delim(here(lake, "hypsograph.dat"), skip = 1, delim = " ", show_col_types = F, col_names = F)
+  hypso <- read_delim(here(lake), skip = 1, delim = " ", show_col_types = F, col_names = F)
+  
   colnames(hypso) <- c("depths", "areas")
   hypso$depths <- (hypso$depths - hypso$depths[length(hypso$depths)]) * -1
   hypso <- hypso %>% arrange(depths)
