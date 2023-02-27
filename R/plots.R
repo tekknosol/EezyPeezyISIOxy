@@ -93,7 +93,7 @@ create_plots_thermal <- function(thermal_data, lake_id, lake_folder){
   modelname <- "20crv3-era5"
   pre <- "_historical_obsclim_gotm_"
   post <- "_daily_1901_2021.nc"
-  temp_pattern <- paste0(modelname, pre, lake, post)
+  temp_pattern <- paste0(modelname, pre, lake_id, post)
   
   temp <- read_temp_nc(here("data/isimip/20CRv3-ERA5", temp_pattern))
   
