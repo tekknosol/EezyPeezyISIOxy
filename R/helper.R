@@ -41,9 +41,11 @@ hypo_oxy <- function(thermo, oxy, depths, bthA, bthD){
 
 read_observations <- function(lake_id, thermal){
   
-  bathy <- read_hypso(here("ObsDOTest", lake_id))
+  # bathy <- read_hypso(here("ObsDOTest", lake_id))
+  hypso_pattern <- paste0("h_", lake_id, ".dat")
+  bathy <- read_hypso(here("data/isimip/hypsography", hypso_pattern))
   
-  lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
+  # lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
   
   id_lookup <- read_csv(here("data/ID_ODtest.csv"))
   
