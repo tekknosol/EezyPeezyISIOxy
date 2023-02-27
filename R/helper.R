@@ -47,9 +47,9 @@ read_observations <- function(lake_id, thermal){
   
   # lake_id <- as.numeric(str_sub(lake_id, 3, nchar(lake_id)))
   
-  obs_lookup <- read_csv(here("data/ID_ODtest.csv"))
+  # obs_lookup <- read_csv(here("data/ID_ODtest.csv"))
   
-  hylakid <- obs_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes_id)
+  hylakid <- id_lookup %>% filter(isimip_id == lake_id) %>% pull(hydrolakes)
   
   obs <- read_rds("data/observed.rds") 
   obs <- obs %>% 
