@@ -136,7 +136,7 @@ plot_runtimes <- function(runtimes){
     # stat_summary(aes(color = trophic_state), fun.y = max, geom = "point", size = 2, position = position_dodge(width = .75)) +
     # stat_summary(aes(color = trophic_state), fun.y = min, geom = "point", size = 2, position = position_dodge(width = .75)) +
     scale_color_manual(values = c("black", "black"))+
-    labs(y = plot0("Runtime per lake for",numit ,"iterations (seconds)"), x = "Method")+
+    labs(y = paste0("Runtime per lake for",numit ,"iterations (seconds)"), x = "Method")+
     theme_bw()
   
   filename1 <- paste0('results/plots/qc/runtime.jpg')
