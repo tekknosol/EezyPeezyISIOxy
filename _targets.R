@@ -5,6 +5,7 @@ library(tibble)
 library(here)
 library(tarchetypes)
 library(compiler)
+library(readr)
 
 # Set target options:
 tar_option_set(
