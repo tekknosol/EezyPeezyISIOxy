@@ -42,12 +42,12 @@ create_plot <- function(oxygen_output, lake_id, working_folder){
 
 save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
   
-  nyears <- 6
+  nyears <- 3
   
   # years <- rev(sort(unique(year(observed$datetime[which(year(observed$datetime)<2020)]))))
   # years <-  years[1:min(nyears, length(years))]
   
-  years <- c(2014:2020)
+  years <- c((2020-nyears+1):2020)
   
   plot_df <- oxygen_data %>% 
     filter(year(datetime) %in% years) %>% 
