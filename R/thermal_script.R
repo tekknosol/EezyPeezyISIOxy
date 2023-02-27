@@ -3,7 +3,7 @@ thermal_info <- function(lake){
   
   modelname <- "20crv3-era5"
   pre <- "_historical_obsclim_gotm_"
-  post <- "_daily_1901_2019.nc"
+  post <- "_daily_1901_2021.nc"
   temp_pattern <- paste0(modelname, pre, lake, post)
   
   hypso_pattern <- paste0("h_", lake, ".dat")
