@@ -6,6 +6,8 @@ library(here)
 library(tarchetypes)
 library(compiler)
 library(readr)
+library(dplyr)
+library(stringr)
 
 # Set target options:
 tar_option_set(
