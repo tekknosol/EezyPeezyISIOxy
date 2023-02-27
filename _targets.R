@@ -135,30 +135,30 @@ targets <- tar_map(
   tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file")
 )
 
-# combined <- list(
-#   tar_combine(
-#     runtimes,
-#     targets[[2]],
-#     command = combine_lakes(!!!.x)
-#   ),
-# 
-#   tar_combine(
-#     combined_oxy_qa,
-#     targets[[5]],
-#     command = bind_rows(!!!.x)
-#   ),
-#   
-#   tar_target(plot_oxy_qa, plot_oxygen_qa(combined_oxy_qa), format = "file"),
-#   
-#   tar_combine(
-#     full_qa,
-#     targets[[6]],
-#     command = plot_full_qa(!!!.x),
-#     format = "file"
-#   )
-# )
+combined <- list(
+  tar_combine(
+    runtimes,
+    targets[[2]],
+    command = combine_lakes(!!!.x)
+  )
+
+  # tar_combine(
+  #   combined_oxy_qa,
+  #   targets[[5]],
+  #   command = bind_rows(!!!.x)
+  # ),
+  # 
+  # tar_target(plot_oxy_qa, plot_oxygen_qa(combined_oxy_qa), format = "file"),
+  # 
+  # tar_combine(
+  #   full_qa,
+  #   targets[[6]],
+  #   command = plot_full_qa(!!!.x),
+  #   format = "file"
+  # )
+)
 
 glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
 
-# list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
-list(glob_trophy, glob_methods, glob_params, targets, glob_runtime)
+list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
+# list(glob_trophy, glob_methods, glob_params, targets, glob_runtime)
