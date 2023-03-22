@@ -31,18 +31,24 @@ tar_option_set(
     "oxypatankr"
   ), # packages that your targets need to run
   # format = "rds" # default storage format
-  format = "qs" # default storage format
-)
-
-tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data storage
-tar_option_set(storage = "worker", retrieval = "worker") # let workers store and retrieve data directly
-
-# Slurm configs
-tar_option_set(
+  format = "qs", # default storage format
+  storage = "worker", 
+  retrieval = "worker", 
+  memory = "transient",
   resources = tar_resources(
     clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
   )
 )
+
+tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data storage
+# tar_option_set(storage = "worker", retrieval = "worker", memory = "transient") # let workers store and retrieve data directly
+
+# Slurm configs
+# tar_option_set(
+#   resources = tar_resources(
+#     clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
+#   )
+# )
 
 # tar_make_clustermq() configuration:
 options(clustermq.scheduler = "multicore") # parallel processing on local machine
@@ -71,12 +77,16 @@ id_lookup <- read_csv(here("data/coord_area_depth.csv"))
 id_lookup <- id_lookup %>% 
   mutate(isimip_id = str_split(id, "_", simplify = T)[,2])
 
+
 rafalakes <- rafalakes %>% 
   left_join(
     id_lookup %>% 
       select(hydrolakes, isimip_id), 
     by = c("ID_vector" = "hydrolakes")
   )
+
+rafalakes <- rafalakes %>% 
+  filter(isimip_id != 40626)
 
 lakes <- tibble(
   # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
@@ -97,7 +107,7 @@ targets <- tar_map(
   values = lakes,
 
   #process thermal module per lake
-  tar_target(thermal, thermal_info(lake_id), error = "null"),
+  tar_target(thermal, thermal_info(lake_id), error = "continue"),
 
   # batch computation based on stratification events. Number of batches defined by 'stratification_batches'
   # tar_group_count(
