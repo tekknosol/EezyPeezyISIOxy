@@ -35,6 +35,7 @@ tar_option_set(
   storage = "worker", 
   retrieval = "worker", 
   memory = "transient",
+  garbage_collection = TRUE,
   resources = tar_resources(
     clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
   )
