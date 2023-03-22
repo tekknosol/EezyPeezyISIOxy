@@ -40,7 +40,7 @@ tar_option_set(storage = "worker", retrieval = "worker") # let workers store and
 # Slurm configs
 tar_option_set(
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(memory = "4G", time = "1:00:00"))
+    clustermq = tar_resources_clustermq(template = list(memory = "4G", time = "5:00:00"))
   )
 )
 
@@ -80,7 +80,7 @@ rafalakes <- rafalakes %>%
 
 lakes <- tibble(
   # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
-  lake_id = rafalakes$isimip_id[1]
+  lake_id = rafalakes$isimip_id
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
