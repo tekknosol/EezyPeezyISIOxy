@@ -126,7 +126,7 @@ targets <- tar_map(
   # store results of oxygen model in results folder
   tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
   # load observations (Abby's lakes)
-  tar_target(observations, read_observations(lake_id, thermal)),
+  tar_target(observations, read_observations(lake_id, thermal), error = "null"),
   # Model quality
   # tar_target(oxy_quality, oxy_qa(oxygen, observations), error = "null"),
   # tar_target(oxy_scatter, oxy_qa_full(oxygen, observations), error = "null"),
