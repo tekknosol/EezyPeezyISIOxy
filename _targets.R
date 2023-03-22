@@ -97,7 +97,7 @@ targets <- tar_map(
   values = lakes,
 
   #process thermal module per lake
-  tar_target(thermal, thermal_info(lake_id)),
+  tar_target(thermal, thermal_info(lake_id), error = "null"),
 
   # batch computation based on stratification events. Number of batches defined by 'stratification_batches'
   # tar_group_count(
@@ -119,7 +119,8 @@ targets <- tar_map(
                 iterations = numit,
                params = oxy_params
               ),
-      pattern = cross(trophy, methods)
+      pattern = cross(trophy, methods), 
+      error = "null"
     ),
 
   # store results of oxygen model in results folder
@@ -132,7 +133,7 @@ targets <- tar_map(
   # Create QC plots for oxygen
   tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file", error = "null"),
   # Create plots of temperature and thermocline depth
-  tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file")
+  tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file", error = "null")
 )
 
 combined <- list(
