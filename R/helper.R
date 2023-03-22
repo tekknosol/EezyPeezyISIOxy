@@ -1,5 +1,6 @@
 
 plssmooth <- function(x, lambda=1000){
+  if (all(is.na(x))) return(NA)
   m <- length(x)
   dd <- diag(m)
   D <- diff(dd)
