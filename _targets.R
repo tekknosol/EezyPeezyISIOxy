@@ -45,16 +45,16 @@ tar_option_set(
 )
 
 # tar_make_clustermq() configuration:
-# options(clustermq.scheduler = "multicore") # parallel processing on local machine
-options(clustermq.scheduler = "slurm") # Slurm on HPC
-options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+options(clustermq.scheduler = "multicore") # parallel processing on local machine
+# options(clustermq.scheduler = "slurm") # Slurm on HPC
+# options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions from R subfolder
 tar_source()
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 10000 # number of iterations for oxygen model
+numit <- 1 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
@@ -80,7 +80,7 @@ rafalakes <- rafalakes %>%
 
 lakes <- tibble(
   # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
-  lake_id = rafalakes$isimip_id
+  lake_id = rafalakes$isimip_id[1]
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
