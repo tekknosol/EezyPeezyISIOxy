@@ -52,9 +52,9 @@ tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data 
 # )
 
 # tar_make_clustermq() configuration:
-# options(clustermq.scheduler = "multicore") # parallel processing on local machine
-options(clustermq.scheduler = "slurm") # Slurm on HPC
-options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+options(clustermq.scheduler = "multicore") # parallel processing on local machine
+#options(clustermq.scheduler = "slurm") # Slurm on HPC
+#options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions from R subfolder
 tar_source()
