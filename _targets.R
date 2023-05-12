@@ -61,7 +61,7 @@ tar_source()
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 100 # number of iterations for oxygen model
+numit <- 1000 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
@@ -86,13 +86,15 @@ rafalakes <- rafalakes %>%
     by = c("ID_vector" = "hydrolakes")
   )
 
-rafalakes <- rafalakes %>% 
-  filter(isimip_id != 40626)
+rafalakes <- rafalakes 
+
+od_ids <- read_csv("data/ID_ODtest.csv", show_col_types = FALSE)
 
 lakes <- tibble(
   # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
-  lake_id = rafalakes$isimip_id
-)
+  # lake_id = rafalakes$isimip_id
+  lake_id = od_ids$isimip_id
+) 
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"), deployment = "main")
@@ -141,18 +143,19 @@ targets <- tar_map(
   # Model quality
   # tar_target(oxy_quality, oxy_qa(oxygen, observations), error = "null"),
   # tar_target(oxy_scatter, oxy_qa_full(oxygen, observations), error = "null"),
+
   # Create QC plots for oxygen
   tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file", error = "null"),
   # Create plots of temperature and thermocline depth
   tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file", error = "null")
 )
 
-combined <- list(
-  tar_combine(
-    runtimes,
-    targets[[2]],
-    command = combine_lakes(!!!.x)
-  )
+# combined <- list(
+#   tar_combine(
+#     runtimes,
+#     targets[[2]],
+#     command = combine_lakes(!!!.x)
+#   )
 
   # tar_combine(
   #   combined_oxy_qa,
@@ -168,9 +171,10 @@ combined <- list(
   #   command = plot_full_qa(!!!.x),
   #   format = "file"
   # )
-)
+# )
 
-glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
+# glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
 
-list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
+list(glob_trophy, glob_methods, glob_params, targets)
+# list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
 # list(glob_trophy, glob_methods, glob_params, targets, glob_runtime)

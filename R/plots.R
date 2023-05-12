@@ -44,10 +44,14 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
   
   nyears <- 3
   
-  # years <- rev(sort(unique(year(observed$datetime[which(year(observed$datetime)<2020)]))))
-  # years <-  years[1:min(nyears, length(years))]
+  if(is.numeric(year(observed$datetime))){
+    years <- rev(sort(unique(year(observed$datetime[which(year(observed$datetime)<2020)]))))
+    years <-  years[1:min(nyears, length(years))]
+  }else{
+    years <- c((2020-nyears+1):2020)
+  }
   
-  years <- c((2020-nyears+1):2020)
+  # years <- c((2020-nyears+1):2020)
   
   plot_df <- oxygen_data %>% 
     filter(year(datetime) %in% years) %>% 
@@ -62,7 +66,7 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
   # select(datetime, DO_mgL)
   
   ggplot()+
-    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)))+
+    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)), alpha = .6)+
     geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
     geom_point(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
     geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+

@@ -77,7 +77,8 @@ read_observations <- function(lake_id, thermal){
         summarise(DO_mgL = hypo_oxy(first(thermocline_depth_smooth), DO_mgL, Depth_m, bathy$areas, bathy$depths))
       
     }) %>% 
-    ungroup()
+    ungroup() %>% 
+    mutate(lake_id = lake_id)
 }
 
 get_hypsography <- function(lake_id, working_folder){
