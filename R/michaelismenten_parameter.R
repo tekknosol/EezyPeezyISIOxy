@@ -4,7 +4,13 @@ get_prior <- function(trophy, n = 1){
     
     # Flux <- rnorm(n, mean = -0.2731324, sd = 0.1669265)  # (g / m2 / d)
     # Flux <- -rlnorm(n, meanlog = -1.247376, sdlog = 0.01631389)  # (g / m2 / d)
-    Flux <- -rlnorm(n, meanlog = -1.547376, sdlog = 1.417046)  # (g / m2 / d)
+
+    #truncated
+    Flux <- -rlnorm(n, meanlog = -1.688881, sdlog = 1.474197)  # (g / m2 / d)
+
+    # original
+    # Flux <- -rlnorm(n, meanlog = -1.547376, sdlog = 1.417046)  # (g / m2 / d)
+
     # Flux <- -rlnorm(n, meanlog = -5.247376, sdlog = 0.0041631389)  # (g / m2 / d)
     # Flux <- rnorm(n, mean = -0.32, sd = 0.096)  # (g / m2 / d)
     Khalf <- rnorm(n, mean = 0.224, sd = 0.032)   # (g / m3)
@@ -14,7 +20,13 @@ get_prior <- function(trophy, n = 1){
     
     # Flux <- abs(rnorm(n, mean = -170.1525, sd = 873.4926*1e-1))  # (g / m2 / d)
     # Flux <- -rlnorm(n, meanlog = 1.082377, sdlog = 0.0346636)  # (g / m2 / d)
-    Flux <- -rlnorm(n, meanlog = 0.9098668, sdlog = 2.2648594)  # (g / m2 / d)
+    
+    #truncated
+    Flux <- -rlnorm(n, meanlog = 0.6602776, sdlog = 1.502307)  # (g / m2 / d)
+
+    #original
+    # Flux <- -rlnorm(n, meanlog = 0.9098668, sdlog = 2.2648594)  # (g / m2 / d)
+    
     # Flux <- -rlnorm(n, meanlog = -0.4558641, sdlog = 0.8448238)  # (g / m2 / d)
     # Flux <- -rlnorm(n, meanlog = -0.4558641, sdlog = 0.08448238)  # (g / m2 / d)
     # Flux <- rnorm(n, mean = -3.2, sd = 0.096)
