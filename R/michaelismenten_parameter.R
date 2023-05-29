@@ -6,7 +6,10 @@ get_prior <- function(trophy, n = 1){
     # Flux <- -rlnorm(n, meanlog = -1.247376, sdlog = 0.01631389)  # (g / m2 / d)
 
     #truncated
-    Flux <- -rlnorm(n, meanlog = -1.688881, sdlog = 1.474197)  # (g / m2 / d)
+    # Flux <- -rlnorm(n, meanlog = -1.688881, sdlog = 1.474197)  # (g / m2 / d)
+
+    #truncated < 0.3
+    Flux <- -rlnorm(n, meanlog = -1.919972, sdlog = 1.680658)  # (g / m2 / d)
 
     # original
     # Flux <- -rlnorm(n, meanlog = -1.547376, sdlog = 1.417046)  # (g / m2 / d)
@@ -22,7 +25,10 @@ get_prior <- function(trophy, n = 1){
     # Flux <- -rlnorm(n, meanlog = 1.082377, sdlog = 0.0346636)  # (g / m2 / d)
     
     #truncated
-    Flux <- -rlnorm(n, meanlog = 0.6602776, sdlog = 1.502307)  # (g / m2 / d)
+    # Flux <- -rlnorm(n, meanlog = 0.6602776, sdlog = 1.502307)  # (g / m2 / d)
+
+    #truncated > 0.45
+    Flux <- -rlnorm(n, meanlog = 0.8511423, sdlog = 1.486916)  # (g / m2 / d)
 
     #original
     # Flux <- -rlnorm(n, meanlog = 0.9098668, sdlog = 2.2648594)  # (g / m2 / d)
