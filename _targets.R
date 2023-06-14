@@ -138,7 +138,7 @@ targets <- tar_map(
     ),
 
   # store results of oxygen model in results folder
-  tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
+  tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file")
   
   # load observations (Abby's lakes)
   # tar_target(observations, read_observations(lake_id, thermal), error = "null"),
