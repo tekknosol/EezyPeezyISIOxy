@@ -1,6 +1,6 @@
 
 get_prior <- function(trophy, n = 1){
-  sdf <- .5
+  sdf <- .7
   
   if (trophy == 'oligo'){
     
