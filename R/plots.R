@@ -66,11 +66,11 @@ save_qc_plot_oxygen <- function(oxygen_data, lake_id, observed){
   # select(datetime, DO_mgL)
   
   ggplot()+
-    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = "Percentile", group = interaction(strat_id, trophic_state)), alpha = .6)+
+    geom_ribbon(data = plot_df, aes(datetime, ymin = oxygen_lowerPercentile, ymax = oxygen_upperPercentile, fill = trophic_state, group = interaction(strat_id, trophic_state)), alpha = .5)+
     geom_line(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
     geom_point(data = plot_df2, aes(datetime, DO_mgL, color = "XObserved"))+
     geom_line(data = plot_df, aes(datetime, oxygen_mean, group = interaction(strat_id, trophic_state), color = trophic_state))+
-    scale_fill_manual(name = NULL, values = c("grey"))+
+    # scale_fill_manual(name = NULL, values = c("grey"))+
     scale_color_brewer(name = NULL, palette = "Set1", labels = c("Model Eutrophic", "Model Oligotrophic", "Observed"))+
     facet_wrap(~method, scales = "free_y", ncol =  1)+
     scale_x_date(date_labels = "%m-%Y", date_breaks = "1 year")+

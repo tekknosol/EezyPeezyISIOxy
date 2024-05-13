@@ -37,7 +37,7 @@ tar_option_set(
   memory = "transient",
   garbage_collection = TRUE,
   resources = tar_resources(
-    clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
+    # clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
   )
 )
 
@@ -52,16 +52,16 @@ tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data 
 # )
 
 # tar_make_clustermq() configuration:
-# options(clustermq.scheduler = "multicore") # parallel processing on local machine
-options(clustermq.scheduler = "slurm") # Slurm on HPC
-options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
+options(clustermq.scheduler = "multicore") # parallel processing on local machine
+# options(clustermq.scheduler = "slurm") # Slurm on HPC
+# options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
 # source required functions from R subfolder
 tar_source()
 
 # settings for computations:
 lake_folder <- "ObsDOTest" # Folder containing isimip results
-numit <- 1000 # number of iterations for oxygen model
+numit <- 10000 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
 
 # Total number of targets for computation: lakes * batches
@@ -86,16 +86,17 @@ rafalakes <- rafalakes %>%
     by = c("ID_vector" = "hydrolakes")
   )
 
-rafalakes <- rafalakes 
+rafalakes <- rafalakes
+  
 
 od_ids <- read_csv("data/ID_ODtest.csv", show_col_types = FALSE)
 
 lakes <- tibble(
   # lake_id = list.files(here(lake_folder), full.names = F)[1:1]
-  lake_id = rafalakes$isimip_id
+  # lake_id = rafalakes$isimip_id
   # lake_id = od_ids$isimip_id  #lakes with observations
-  # lake_id = 28865
-) 
+  lake_id = 18005
+)
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"), deployment = "main")
@@ -138,17 +139,17 @@ targets <- tar_map(
     ),
 
   # store results of oxygen model in results folder
-  tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file")
+  tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
   
   # load observations (Abby's lakes)
-  # tar_target(observations, read_observations(lake_id, thermal), error = "null"),
+  tar_target(observations, read_observations(lake_id, thermal), error = "null"),
   
   # Model quality
   # tar_target(oxy_quality, oxy_qa(oxygen, observations), error = "null"),
   # tar_target(oxy_scatter, oxy_qa_full(oxygen, observations), error = "null"),
 
   # Create QC plots for oxygen
-  # tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file", error = "null"),
+  tar_target(plot_qc_oxy, save_qc_plot_oxygen(oxygen, lake_id, observations), format = "file", error = "null")
   
   # Create plots of temperature and thermocline depth
   # tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file", error = "null")

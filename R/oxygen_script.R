@@ -20,7 +20,7 @@ run_oxygen_model <- function(thermal_data, lake_id, method = 'rk4', trophy = 'ol
     filter(duration > 2)
   
   
-  output = oxygen_model_switch(thermal_data_reduced, method = method, trophy = trophy, iterations = iterations, params = params)
+  output = oxygen_model_switch(thermal_data_reduced, method = method, trophy = trophy, iterations = iterations, params = params, lakeid = lake_id)
   end <- Sys.time()
   runtime <- round(as.numeric(end) - as.numeric(start),2)
   
@@ -39,14 +39,14 @@ run_oxygen_model <- function(thermal_data, lake_id, method = 'rk4', trophy = 'ol
 
 
 oxygen_model_switch <- function(thermal_data_reduced, method, trophy,
-                           iterations, params = NULL){
+                           iterations, params = NULL, lakeid = NULL){
   
   if(method == "lsoda_event"){
     output <-  consume_oxygen_event(thermal_data_reduced, trophy = trophy, method = method, iterations = iterations, params = params)
   }else if (method == "lsoda_event_f"){
     output <-  cmp_consume_oxygen_event_f(thermal_data_reduced, trophy = trophy, method = method, iterations = iterations, params = params)
   } else if (method == "patankar-rk2_c"){
-    output <-  consume_oxygen_patankar(thermal_data_reduced, method = method, trophy = trophy, iterations = iterations, params = params)
+    output <-  consume_oxygen_patankar(thermal_data_reduced, method = method, trophy = trophy, iterations = iterations, params = params, lakeid = lakeid)
   } else {
     output <-  consume_oxygen_per_stratevent(thermal_data_reduced, method = method, trophy = trophy, iterations = iterations, params = params)
   }
@@ -80,12 +80,12 @@ consume_oxygen_per_stratevent <- function(thermal_subset, method, trophy,
 }
 
 consume_oxygen_patankar <- function(thermal_subset, method, trophy,
-                                    iterations, params = NULL){
+                                    iterations, params = NULL, lakeid = NULL){
   
   thermal_subset <- thermal_subset %>% 
     mutate(onset = (strat_id - lag(strat_id, default = 9999))) %>% 
     mutate(onset = ifelse(onset == 0,0,1)) %>% 
-    mutate(O2_sat = o2.at.sat.base(temp = hypo_temp, altitude = 500))
+    mutate(O2_sat = LakeMetabolizer::o2.at.sat.base(temp = hypo_temp, altitude = 500))
   
   
   Time_linear <- seq(1, nrow(thermal_subset), 1)
@@ -108,6 +108,19 @@ consume_oxygen_patankar <- function(thermal_subset, method, trophy,
     Temp_linear = Temp_linear(Time_linear),
     iterations = iterations
   )
+  
+  
+  # qs::qsave(
+  #   Output_ode %>% 
+  #     as_tibble() %>% 
+  #     mutate(datetime = lubridate::as_datetime(thermal_subset$datetime))
+  #     , 
+  #   file = here("results/validation/", paste0(lakeid,"_",trophy, ".qs")))
+  
+  # Output_ode <- o2_summarize_matrix(Output_ode)
+  # Output_ode <- summarize_oxygen_matrix(Output_ode)
+  
+  
 
   Output_ode <- tibble(
     datetime = lubridate::as_datetime(thermal_subset$datetime)
@@ -321,7 +334,7 @@ consume_oxygen_event_f <- function(thermal_data, trophy, method, iterations , pa
   return(df)
 }
 
-cmp_consume_oxygen_event_f <- cmpfun(consume_oxygen_event_f)
+# cmp_consume_oxygen_event_f <- cmpfun(consume_oxygen_event_f)
 
 consume_oxygen_event <- function(thermal_data, trophy, method, iterations , params){
 
