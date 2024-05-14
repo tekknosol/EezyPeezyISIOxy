@@ -4,5 +4,7 @@
 # Choose how to execute the pipeline below.
 
 # targets::tar_make()
-targets::tar_make_clustermq(workers = 300, reporter = "summary") # nolint
+# targets::tar_make_clustermq(workers = 300, reporter = "summary") # nolint
+
+targets::tar_make_clustermq(workers = 10, reporter = "summary")
 
