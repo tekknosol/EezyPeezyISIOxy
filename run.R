@@ -6,5 +6,5 @@
 # targets::tar_make()
 # targets::tar_make_clustermq(workers = 300, reporter = "summary") # nolint
 
-targets::tar_make_clustermq(workers = 5, reporter = "silent")
+targets::tar_make_clustermq(workers = 10, reporter = "silent")
 
