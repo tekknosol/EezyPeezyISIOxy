@@ -1,8 +1,8 @@
 #!/bin/bash 
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=10
-#SBATCH --mem=20G
-#SBATCH --time=00:30:00
+#SBATCH --ntasks-per-node=32
+#SBATCH --mem=128000M
+#SBATCH --time=30:00:00
 #SBATCH --mail-user=philipp.keller@igb-berlin.de
 #SBATCH --mail-type=ALL
 
