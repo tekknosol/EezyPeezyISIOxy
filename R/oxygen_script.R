@@ -1,7 +1,18 @@
 
+oxygen_walk <- function(thermal_data, lakes, method = 'rk4', trophy = 'oligo',
+                        iterations = 100, params = NULL){
+  lakes %>% 
+    # slice(1) %>% 
+    split(.$lake_id) %>% 
+    map_dfr(~{
+      td_subset <- thermal_data %>% filter(lake_id == .x$lake_id)
+      
+      # td_subset
+      run_oxygen_model(td_subset, .x$lake_id, method, trophy, iterations, params)
+    })
+}
 
-
-run_oxygen_model <- function(thermal_data, lake_id, method = 'rk4', trophy = 'oligo',
+run_oxygen_model <- function(thermal_data, lake_id, method = "patankar-rk2_c", trophy = 'oligo',
                              iterations = 100, params = NULL){
 
   

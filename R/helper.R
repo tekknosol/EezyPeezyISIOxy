@@ -2,6 +2,7 @@
 plssmooth <- function(x, lambda=1000){
   if (all(is.na(x))) return(NA)
   m <- length(x)
+  if(m > 1000) return(x)
   dd <- diag(m)
   D <- diff(dd)
   a <- dd+lambda*t(D)%*%D
@@ -131,7 +132,7 @@ get_thermal_data <- function(lake_id, working_folder, hypsography_data){
 
 summarize_oxygen_matrix <- function(oxygen){
   df <- tibble(
-    oxygen_mean = rowMeans(oxygen),
+    oxygen_mean = rowMeans2(oxygen),
     oxygen_median = rowMedians(oxygen),
     oxygen_sd = rowSds(oxygen),
     oxygen_upperPercentile = rowQuantiles(oxygen, probs = c(0.975)),

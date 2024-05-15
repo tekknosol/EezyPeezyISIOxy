@@ -1,3 +1,12 @@
+thermal_walk <- function(lakes){
+  lakes %>% 
+    split(.$lake_id) %>% 
+    map_dfr(~{
+      thermal_info(.x$lake_id) %>% 
+        mutate(lake_id = .x$lake_id)
+    }) 
+}
+
 thermal_info <- function(lake){
   # Read Temp & Depth
   

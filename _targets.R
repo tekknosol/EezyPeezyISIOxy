@@ -57,7 +57,7 @@ tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data 
 # )
 
 # tar_make_clustermq() configuration:
-options(clustermq.scheduler = "multicore") # parallel processing on local machine
+# options(clustermq.scheduler = "multicore") # parallel processing on local machine
 # options(clustermq.scheduler = "slurm") # Slurm on HPC
 # options(clustermq.template = "clustermq.tmpl") # Slurm sbatch template
 
@@ -68,6 +68,7 @@ tar_source()
 lake_folder <- "data/isimip/20CRv3-ERA5" # Folder containing isimip results
 numit <- 1000 # number of iterations for oxygen model
 stratification_batches <- 1 # Number of batches of stratification events per lake
+lake_batches <- 400
 
 # Total number of targets for computation: lakes * batches
 
@@ -106,45 +107,67 @@ lakes <- tibble(
   lake_id = isimip_lakes
 )
 
+# trophy <- tibble(
+#   trophy = c("oligo", "eutro")
+# )
+
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
+
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero", "patankar-rk2"), deployment = "main")
 # glob_methods <- tar_target(methods, c("patankar-rk2_c", "lsoda_event", "lsoda"), deployment = "main")
-glob_methods <- tar_target(methods, c("patankar-rk2_c"), deployment = "main")
+# glob_methods <- tar_target(methods, c("patankar-rk2_c"), deployment = "main")
 # glob_methods <- tar_target(methods, c("rk4", "rk4_zero"), deployment = "main")
 glob_params <- tar_target(oxy_params, get_prior(trophy, n = numit), pattern = trophy, deployment = "main")
 
+t2 <- tar_group_count(lakes_to_model,lakes, count = lake_batches)
 
+# t3 <- tar_target(group, lakes_to_model, pattern = map(lakes_to_model))
 
-targets <- tar_map(
-  unlist = FALSE, # Return a nested list from tar_map()
-  values = lakes,
+t3 <- tar_target(thermal, thermal_walk(lakes_to_model), error = "continue", pattern = map(lakes_to_model))
 
-  #process thermal module per lake
-  tar_target(thermal, thermal_info(lake_id), error = "continue"),
+t4 <- tar_target(oxygen,
+                 oxygen_walk(
+                   thermal,
+                   lakes_to_model,
+                   trophy = trophy,
+                   method = "patankar-rk2_c",
+                   iterations = numit,
+                   params = oxy_params
+                  ),
+ pattern = cross(trophy, lakes_to_model),
+ error = "null"
+)
 
-  # batch computation based on stratification events. Number of batches defined by 'stratification_batches'
-  # tar_group_count(
-  #   thermal_to_model,
-  #   tibble(data = thermal %>%
-  #     filter(!is.na(stratified)) %>%
-  #     filter(duration > 2) %>%
-  #     group_split(strat_id)),
-  #   count = stratification_batches
-  # ),
-
-  # run oxygen model
-  tar_target(oxygen,
-             run_oxygen_model(
-               thermal,
-               lake_id,
-                method = methods, # rk4, patankar-rk2
-                trophy = trophy,
-                iterations = numit,
-               params = oxy_params
-              ),
-      pattern = cross(trophy, methods), 
-      error = "null"
-    )
+# targets <- tar_map(
+#   unlist = FALSE, # Return a nested list from tar_map()
+#   values = lakes,
+# 
+#   #process thermal module per lake
+#   tar_target(thermal, thermal_info(lake_id), error = "continue"),
+# 
+#   # batch computation based on stratification events. Number of batches defined by 'stratification_batches'
+#   # tar_group_count(
+#   #   thermal_to_model,
+#   #   tibble(data = thermal %>%
+#   #     filter(!is.na(stratified)) %>%
+#   #     filter(duration > 2) %>%
+#   #     group_split(strat_id)),
+#   #   count = stratification_batches
+#   # ),
+# 
+#   # run oxygen model
+#   tar_target(oxygen,
+#              run_oxygen_model(
+#                thermal,
+#                lake_id,
+#                 method = methods, # rk4, patankar-rk2
+#                 trophy = trophy,
+#                 iterations = numit,
+#                params = oxy_params
+#               ),
+#       pattern = cross(trophy, methods), 
+#       error = "null"
+#     )
 
   # store results of oxygen model in results folder
   # tar_target(write_oxygen, save_model_output(oxygen, lake_id), format = "file"),
@@ -161,7 +184,7 @@ targets <- tar_map(
   
   # Create plots of temperature and thermocline depth
   # tar_target(plot_thermal, create_plots_thermal(thermal, lake_id, lake_folder), format = "file", error = "null")
-)
+# )
 
 # combined <- list(
 #   tar_combine(
@@ -188,6 +211,6 @@ targets <- tar_map(
 
 # glob_runtime <- tar_target(plot_runtime, plot_runtimes(runtimes), format = "file")
 
-list(glob_trophy, glob_methods, glob_params, targets)
+list(glob_trophy, glob_params, t2, t3, t4)
 # list(glob_trophy, glob_methods, glob_params, targets, combined, glob_runtime)
 # list(glob_trophy, glob_methods, glob_params, targets, glob_runtime)
