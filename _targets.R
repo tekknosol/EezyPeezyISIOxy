@@ -43,7 +43,7 @@ tar_option_set(
 )
 
 tar_option_set(
-  controller = crew_controller_local(workers = 5)
+  controller = crew_controller_local(workers = 32)
 )
 
 tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data storage
