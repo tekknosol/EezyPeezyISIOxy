@@ -43,10 +43,10 @@ tar_option_set(
 )
 
 tar_option_set(
-  controller = crew_controller_local(workers = 32)
+  controller = crew_controller_local(workers = 5)
 )
 
-tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data storage
+tar_config_set(store = "~/scratch/isioxy") # Folder for target's internal data storage
 # tar_option_set(storage = "worker", retrieval = "worker", memory = "transient") # let workers store and retrieve data directly
 
 # Slurm configs
@@ -123,7 +123,7 @@ t2 <- tar_group_count(lakes_to_model,lakes, count = lake_batches)
 
 # t3 <- tar_target(group, lakes_to_model, pattern = map(lakes_to_model))
 
-t3 <- tar_target(thermal, thermal_walk(lakes_to_model), error = "continue", pattern = map(lakes_to_model))
+t3 <- tar_target(thermal, thermal_walk(lakes_to_model), error = "continue", pattern = map(lakes_to_model), format = "file")
 
 t4 <- tar_target(oxygen,
                  oxygen_walk(

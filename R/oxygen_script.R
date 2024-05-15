@@ -1,14 +1,27 @@
 
-oxygen_walk <- function(thermal_data, lakes, method = 'rk4', trophy = 'oligo',
-                        iterations = 100, params = NULL){
+oxygen_walk <- function(
+    thermal_data,
+    lakes, 
+    method = 'rk4', 
+    trophy = 'oligo',
+    iterations = 100, 
+    params = NULL
+){
+  thermal_path <- "~/scratch/isi/thermal/"
+  
+  # oxygen_path <- "~/scratch/isi/oxygen/"
+  # if(!dir.exists(oxygen_path)) dir.create(oxygen_path, recursive = TRUE)
+  
   lakes %>% 
     # slice(1) %>% 
     split(.$lake_id) %>% 
     map_dfr(~{
-      td_subset <- thermal_data %>% filter(lake_id == .x$lake_id)
+      # td_subset <- thermal_data %>% filter(lake_id == .x$lake_id)
       
-      # td_subset
-      run_oxygen_model(td_subset, .x$lake_id, method, trophy, iterations, params)
+      td_subset <- qs::qread(paste0(thermal_path,"thermal_", .x$lake_id, ".qs"))
+      
+      run_oxygen_model(td_subset, .x$lake_id, method, trophy, iterations, params) 
+        # qs::qsave(paste0(oxygen_path,"oxygen_",.x$lake_id,".qs"))
     })
 }
 
