@@ -8,6 +8,7 @@ library(compiler)
 library(readr)
 library(dplyr)
 library(stringr)
+library(crew)
 
 # Set target options:
 tar_option_set(
@@ -39,6 +40,10 @@ tar_option_set(
   resources = tar_resources(
     # clustermq = tar_resources_clustermq(template = list(memory = "10G", time = "5:00:00", log_file = "logs/log.out"))
   )
+)
+
+tar_option_set(
+  controller = crew_controller_local(workers = 5)
 )
 
 tar_config_set(store = "~/scratch/isioxy/") # Folder for target's internal data storage
@@ -98,7 +103,7 @@ lakes <- tibble(
   # lake_id = rafalakes$isimip_id
   # lake_id = od_ids$isimip_id  #lakes with observations
   # lake_id = 18005
-  lake_id = isimip_lakes
+  lake_id = isimip_lakes[1:10000]
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
