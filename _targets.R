@@ -103,7 +103,7 @@ lakes <- tibble(
   # lake_id = rafalakes$isimip_id
   # lake_id = od_ids$isimip_id  #lakes with observations
   # lake_id = 18005
-  lake_id = isimip_lakes[1:10000]
+  lake_id = isimip_lakes
 )
 
 glob_trophy <- tar_target(trophy, c("oligo", "eutro"), deployment = "main")
