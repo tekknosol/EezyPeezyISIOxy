@@ -58,7 +58,8 @@ lakes <- tibble(
 lakes <- lakes %>% 
   mutate(grp = (row_number()-1) %/% (n()/lake_batches))
 
-lakes <- filter(grp == as.numeric(args[1]))
+lakes <- lakes %>% 
+  filter(grp == as.numeric(args[1]))
 
 trophy <- c("oligo", "eutro")
 
