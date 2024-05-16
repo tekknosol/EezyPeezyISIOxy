@@ -35,7 +35,7 @@ walk(list.files(here("R/"), full.names = T), source)
 path_store <-  "~/scratch/isi" # Folder for target's internal data storage
 
 lake_folder <- "data/isimip/20CRv3-ERA5" # Folder containing isimip results
-numit <- 5 # number of iterations for oxygen model
+numit <- 1000 # number of iterations for oxygen model
 # stratification_batches <- 1 # Number of batches of stratification events per lake
 lake_batches <- 9
 
