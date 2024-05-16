@@ -1,15 +1,17 @@
-thermal_walk <- function(lakes){
+thermal_walk <- function(lake){
   path <- "~/scratch/isi/thermal/"
   if(!dir.exists(path)) dir.create(path, recursive = TRUE)
   
-  a <- lakes %>% 
-    split(.$lake_id) %>% 
-    walk(~{
-      thermal_info(.x$lake_id) %>% 
-        mutate(lake_id = .x$lake_id) %>% 
-        qs::qsave(paste0(path,"thermal_",.x$lake_id,".qs"))
-    }) 
-  path
+  tryCatch({    
+      thermal_info(lake) %>% 
+        mutate(lake_id = lake) %>% 
+        qs::qsave(paste0(path,"thermal_",lake,".qs"))
+  
+  }, error = function(err) {
+    
+  }, finally = {
+    
+  }) # END tryCatch
 }
 
 thermal_info <- function(lake){
