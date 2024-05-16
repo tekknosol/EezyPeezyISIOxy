@@ -16,7 +16,7 @@ library(future)
 library(furrr)
 library(oxypatankr)
 
-plan(multisession, workers = 2)
+# plan(multisession, workers = 2)
 
 cl <- makeClusterPSOCK(
   availableWorkers(),
@@ -66,7 +66,7 @@ oxy_params <- trophy %>% map_dfr(get_prior, n = numit)
 
 lakes %>% 
   split(.$lake_id) %>% 
-  walk(~{
+  future_walk(~{
     lake <- .x$lake_id
     if(run_thermal & (fullrun | !file.exists(paste0(path_store, "/thermal/thermal_", lake, ".qs")))){
       lake %>% thermal_walk() 
