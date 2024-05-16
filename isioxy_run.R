@@ -16,7 +16,9 @@ library(future)
 library(furrr)
 library(oxypatankr)
 
-# plan(multisession, workers = 2)
+# plan(multisession, workers = 5)
+
+message("Start setup")
 
 cl <- makeClusterPSOCK(
   availableWorkers(),
@@ -35,7 +37,7 @@ walk(list.files(here("R/"), full.names = T), source)
 path_store <-  "~/scratch/isi" # Folder for target's internal data storage
 
 lake_folder <- "data/isimip/20CRv3-ERA5" # Folder containing isimip results
-numit <- 1000 # number of iterations for oxygen model
+numit <- 10 # number of iterations for oxygen model
 # stratification_batches <- 1 # Number of batches of stratification events per lake
 lake_batches <- 9
 
@@ -65,6 +67,8 @@ trophy <- c("oligo", "eutro")
 
 oxy_params <- trophy %>% map_dfr(get_prior, n = numit)
 
+message("Start model")
+
 lakes %>% 
   split(.$lake_id) %>% 
   future_walk(~{
@@ -87,4 +91,4 @@ lakes %>%
         } else{message("skip oxygen ", trophy, " lake ",lake)}
       })
       
-  })
+  }, future.seed = TRUE)
