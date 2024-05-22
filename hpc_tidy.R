@@ -1,3 +1,5 @@
+args = commandArgs(trailingOnly=TRUE)
+
 library(here)
 library(dplyr)
 library(qs)
@@ -21,4 +23,4 @@ plan(cluster, workers = cl)
 
 source(here("R/tidy_data.R"))
 
-tidy_annual_min_o2()
+tidy_annual_min_o2(type = args[1], gcm = args[2])

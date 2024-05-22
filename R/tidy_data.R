@@ -22,7 +22,8 @@ tidy_annual_min_o2 <- function(path = "~/scratch/isi/oxygen", type = "obsclim", 
       })
     })
   
-  qs::qsave(annual_min_o2, "results/annual_min_o2.qs")
+  path_out <- here("results", paste0(paste(type, gcm, "annual_min_o2", sep = "_"), ".qs"))
+  qs::qsave(annual_min_o2, path_out)
 }
 
 tidy_observations <- function(){

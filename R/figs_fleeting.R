@@ -1,6 +1,7 @@
 
-fig_ts <- function(path = "results/plots"){
-  annual_min_o2 <- qread(here("results/annual_min_o2.qs"))
+fig_ts <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5"){
+  path_data <- here("results", paste0(paste(type, gcm, "annual_min_o2", sep = "_"), ".qs"))
+  annual_min_o2 <- qread(path_data)
   
   annual_min_o2 <- annual_min_o2 %>% 
     mutate("0.5" = oxygen_min < 0.5) %>% 
@@ -20,8 +21,61 @@ fig_ts <- function(path = "results/plots"){
     ylab("Number of lakes")+
     theme_bw()
   
-  path <- here(path, "fig_ts.jpg")
+  path <- here(path, paste0(paste("fig",type, gcm, "ts", sep = "_"), ".jpg"))
   ggsave(path, fig, width = 9.5, height = 6)
+}
+
+fig_map <- function(){
+  annual_min_o2 <- qread(here("results/annual_min_o2.qs"))
+  
+  annual_min_o2 <- annual_min_o2 %>% 
+    mutate("0.5" = oxygen_min < 0.5) %>% 
+    mutate("1" = oxygen_min < 1) %>% 
+    mutate("2" = oxygen_min < 2) %>% 
+    pivot_longer(any_of(c("0.5", "1", "2")), names_to = "oxy_lvl", values_to = "anoxic")
+  
+  id_lookup <- read_csv(here("data/coord_area_depth.csv"))
+  
+  id_lookup <- id_lookup %>% 
+    mutate(isimip_id = str_split(id, "_", simplify = T)[,2])
+  
+  hlakes <- read_sf("~/Research/gisdata/HydroLAKES_points_v10_shp/HydroLAKES_eezy.shp")
+  hlakes <- hlakes %>% 
+    left_join(
+      id_lookup %>% 
+        select(hydrolakes, isimip_id),
+      by = c("Hylak_id" = "hydrolakes")
+    )
+  
+  plot_map <- hlakes %>% 
+    left_join(
+      annual_min_o2 %>% 
+        group_by(trophic_state, oxy_lvl, lake_id) %>% 
+        summarise(anoxic = max(anoxic)) %>% 
+        mutate(anoxic = as.logical(anoxic)), 
+      by = c("isimip_id" = "lake_id")
+    ) 
+  
+  a <- annual_min_o2 %>% 
+    group_by(trophic_state, oxy_lvl, lake_id) %>% 
+    summarise(anoxic = max(anoxic)) %>% 
+    mutate(anoxic = as.logical(anoxic))
+  
+  map_bg <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf") %>% 
+    filter(continent != "Antarctica")
+  
+  map_bg <- map_bg %>% group_by(continent) %>% summarise()
+  
+  ggplot(plot_map %>% filter(Depth_avg > 6.5) %>% filter(!is.na(anoxic)))+
+    geom_sf(data = map_bg)+
+    geom_sf(aes(color = anoxic))+
+    coord_sf(crs = "ESRI:53030")+
+    facet_wrap(oxy_lvl~trophic_state, ncol = 2)+
+    scale_color_discrete(direction = -1)+
+    theme(legend.position = "bottom")
+  
+  ggsave(here("reports/cayelan/fig1.jpg"), scale = 1.5)
+  
 }
 
 
