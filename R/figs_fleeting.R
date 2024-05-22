@@ -1,6 +1,6 @@
 
 fig_ts <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5"){
-  path_data <- here("results", paste0(paste(type, gcm, "annual_min_o2", sep = "_"), ".qs"))
+  path_data <- here("results", paste0(paste(type, tolower(gcm), "annual_min_o2", sep = "_"), ".qs"))
   annual_min_o2 <- qread(path_data)
   
   annual_min_o2 <- annual_min_o2 %>% 
@@ -25,8 +25,10 @@ fig_ts <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5"
   ggsave(path, fig, width = 9.5, height = 6)
 }
 
-fig_map <- function(){
-  annual_min_o2 <- qread(here("results/annual_min_o2.qs"))
+fig_map <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5"){
+  path_data <- here("results", paste0(paste(type, tolower(gcm), "annual_min_o2", sep = "_"), ".qs"))
+  annual_min_o2 <- qread(path_data)
+  
   
   annual_min_o2 <- annual_min_o2 %>% 
     mutate("0.5" = oxygen_min < 0.5) %>% 
@@ -39,7 +41,7 @@ fig_map <- function(){
   id_lookup <- id_lookup %>% 
     mutate(isimip_id = str_split(id, "_", simplify = T)[,2])
   
-  hlakes <- read_sf("~/Research/gisdata/HydroLAKES_points_v10_shp/HydroLAKES_eezy.shp")
+  hlakes <- read_sf("~/Research/gisdata/HydroLAKES_points_v10_shp/HydroLAKES_points_v10.shp")
   hlakes <- hlakes %>% 
     left_join(
       id_lookup %>% 
@@ -47,35 +49,32 @@ fig_map <- function(){
       by = c("Hylak_id" = "hydrolakes")
     )
   
-  plot_map <- hlakes %>% 
-    left_join(
-      annual_min_o2 %>% 
-        group_by(trophic_state, oxy_lvl, lake_id) %>% 
-        summarise(anoxic = max(anoxic)) %>% 
-        mutate(anoxic = as.logical(anoxic)), 
-      by = c("isimip_id" = "lake_id")
-    ) 
-  
-  a <- annual_min_o2 %>% 
+  plot_map <- annual_min_o2 %>% 
     group_by(trophic_state, oxy_lvl, lake_id) %>% 
     summarise(anoxic = max(anoxic)) %>% 
-    mutate(anoxic = as.logical(anoxic))
+    mutate(anoxic = as.logical(anoxic)) %>% 
+    left_join(
+      hlakes,
+      by = c("lake_id" = "isimip_id")
+    ) %>% 
+    st_as_sf()
   
   map_bg <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf") %>% 
     filter(continent != "Antarctica")
   
-  map_bg <- map_bg %>% group_by(continent) %>% summarise()
+  # map_bg <- map_bg %>%  group_by(continent) %>% summarise()
   
-  ggplot(plot_map %>% filter(Depth_avg > 6.5) %>% filter(!is.na(anoxic)))+
+  fig <- ggplot(plot_map %>% filter(Depth_avg > 6.5) %>% filter(!is.na(anoxic)))+
     geom_sf(data = map_bg)+
     geom_sf(aes(color = anoxic))+
     coord_sf(crs = "ESRI:53030")+
     facet_wrap(oxy_lvl~trophic_state, ncol = 2)+
     scale_color_discrete(direction = -1)+
+    theme_bw()+
     theme(legend.position = "bottom")
   
-  ggsave(here("reports/cayelan/fig1.jpg"), scale = 1.5)
-  
+  path <- here(path, paste0(paste("fig",type, tolower(gcm), "map", sep = "_"), ".jpg"))
+  ggsave(path, fig, width = 10, height = 8.5)
 }
 
 
