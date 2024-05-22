@@ -12,4 +12,4 @@ cd ~/EezyPeezyISIOxy/
   
 module load StdEnv/2020 r/4.1.0
 
-Rscript isioxy_run.R $SLURM_ARRAY_TASK_ID
+Rscript isioxy_run.R $SLURM_ARRAY_TASK_ID $1 $2
