@@ -8,7 +8,7 @@ library(qs)
 library(ggplot2)
 library(ggridges)
 library(sf)
-library(rnaturalearth)
+# library(rnaturalearth)
 library(stringr)
 
 source(here("R/figs_fleeting.R"))
