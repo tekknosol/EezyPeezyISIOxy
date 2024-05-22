@@ -21,7 +21,7 @@ fig_ts <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5"
     ylab("Number of lakes")+
     theme_bw()
   
-  path <- here(path, paste0(paste("fig",type, gcm, "ts", sep = "_"), ".jpg"))
+  path <- here(path, paste0(paste("fig",type, tolower(gcm), "ts", sep = "_"), ".jpg"))
   ggsave(path, fig, width = 9.5, height = 6)
 }
 
