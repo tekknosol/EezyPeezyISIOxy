@@ -1,6 +1,7 @@
 
 tidy_annual_min_o2 <- function(path = "~/scratch/isi/oxygen", type = "obsclim", gcm = "20CRv3-ERA5"){
-  files <- list.files(here(path, type, gcm))
+  path <- here(path, type, gcm)
+  files <- list.files(path)
   
   annual_min_o2 <- files %>% 
     future_map_dfr(~{
