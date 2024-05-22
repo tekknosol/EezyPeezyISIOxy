@@ -42,7 +42,7 @@ numit <- 1000 # number of iterations for oxygen model
 lake_batches <- 9
 
 fullrun <- TRUE
-run_thermal <- FALSE
+run_thermal <- TRUE
 run_oxygen <- TRUE
 
 isimip_lakes <- list.files(here(lake_folder), full.names = F)
