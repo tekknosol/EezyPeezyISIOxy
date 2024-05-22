@@ -1,11 +1,11 @@
-thermal_walk <- function(lake){
-  path <- "~/scratch/isi/thermal/"
+thermal_walk <- function(lake, gcm = "20CRv3-ERA5", type = "obsclim"){
+  path <- paste("~/scratch/isi/thermal", type, gcm, sep = "/")
   if(!dir.exists(path)) dir.create(path, recursive = TRUE)
   
   tryCatch({    
-      thermal_info(lake) %>% 
+      thermal_info(lake, gcm, type) %>% 
         mutate(lake_id = lake) %>% 
-        qs::qsave(paste0(path,"thermal_",lake,".qs"))
+        qs::qsave(paste0(path,"/thermal_",lake,".qs"))
   
   }, error = function(err) {
     
@@ -14,17 +14,18 @@ thermal_walk <- function(lake){
   }) # END tryCatch
 }
 
-thermal_info <- function(lake){
+thermal_info <- function(lake, gcm = "20CRv3-ERA5", type = "obsclim"){
   # Read Temp & Depth
   
-  modelname <- "20crv3-era5"
-  pre <- "_historical_obsclim_gotm_"
-  post <- "_daily_1901_2021.nc"
-  temp_pattern <- paste0(modelname, pre, lake, post)
+  # modelname <- "20crv3-era5"
+  part1 <- "_historical_"
+  part2 <- "_gotm_"
+  part3 <- "_daily_1901_2021.nc"
+  temp_pattern <- paste0(tolower(gcm), part1, type, part2, lake, part3)
   
   hypso_pattern <- paste0("h_", lake, ".dat")
   
-  Temp <- read_temp_nc(here("data/isimip/20CRv3-ERA5", temp_pattern))
+  Temp <- read_temp_nc(here("data/isimip", type, gcm, temp_pattern))
 
   hypso <- read_hypso(here("data/isimip/hypsography", hypso_pattern))
   

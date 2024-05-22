@@ -1,21 +1,23 @@
 
 oxygen_walk <- function(
     lake, 
+    gcm = "20CRv3-ERA5",
+    type = "obsclim",
     method = 'patankar-rk2_c', 
     trophy = 'oligo',
     iterations = 100, 
     params = NULL
 ){
-  thermal_path <- "~/scratch/isi/thermal/"
+  thermal_path <- paste("~/scratch/isi/thermal", type, gcm, sep = "/")
   
-  oxygen_path <- "~/scratch/isi/oxygen/"
+  oxygen_path <- paste("~/scratch/isi/oxygen", type, gcm, sep = "/")
   if(!dir.exists(oxygen_path)) dir.create(oxygen_path, recursive = TRUE)
   
   tryCatch({    
-      td_subset <- qs::qread(paste0(thermal_path,"thermal_", lake, ".qs"))
+      td_subset <- qs::qread(paste0(thermal_path,"/thermal_", lake, ".qs"))
       
       run_oxygen_model(td_subset, lake, method, trophy, iterations, params) %>% 
-        qs::qsave(paste0(oxygen_path,"oxygen_",trophy,"_",lake,".qs"))
+        qs::qsave(paste0(oxygen_path,"/oxygen_",trophy,"_",lake,".qs"))
     
   }, error = function(err) {
     

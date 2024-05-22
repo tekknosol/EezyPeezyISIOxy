@@ -37,12 +37,12 @@ walk(list.files(here("R/"), full.names = T), source)
 path_store <-  "~/scratch/isi" # Folder for target's internal data storage
 
 lake_folder <- "data/isimip/20CRv3-ERA5" # Folder containing isimip results
-numit <- 10 # number of iterations for oxygen model
+numit <- 1000 # number of iterations for oxygen model
 # stratification_batches <- 1 # Number of batches of stratification events per lake
 lake_batches <- 9
 
 fullrun <- TRUE
-run_thermal <- TRUE
+run_thermal <- FALSE
 run_oxygen <- TRUE
 
 isimip_lakes <- list.files(here(lake_folder), full.names = F)
@@ -74,7 +74,7 @@ lakes %>%
   future_walk(~{
     lake <- .x$lake_id
     if(run_thermal & (fullrun | !file.exists(paste0(path_store, "/thermal/thermal_", lake, ".qs")))){
-      lake %>% thermal_walk() 
+      lake %>% thermal_walk(gcm = args[3], type = args[2]) 
     } else{message("skip thermal lake ",lake)}
     
     trophy %>%
@@ -83,6 +83,8 @@ lakes %>%
         if(run_oxygen & (fullrun | !file.exists(paste0(path_store,"/oxygen/oxygen_",trophy, "_", lake,".qs")))){
           oxygen_walk(
             lake,
+            gcm = args[3],
+            type = args[2],
             trophy = trophy,
             method = "patankar-rk2_c",
             iterations = numit,
