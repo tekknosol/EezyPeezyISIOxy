@@ -41,7 +41,7 @@ fig_map <- function(path = "results/plots", type = "obsclim", gcm = "20CRv3-ERA5
   id_lookup <- id_lookup %>% 
     mutate(isimip_id = str_split(id, "_", simplify = T)[,2])
   
-  hlakes <- read_sf("~/Research/gisdata/HydroLAKES_points_v10_shp/HydroLAKES_points_v10.shp")
+  hlakes <- read_sf("data/HydroLAKES/HydroLAKES_points_v10.shp")
   hlakes <- hlakes %>% 
     left_join(
       id_lookup %>% 
