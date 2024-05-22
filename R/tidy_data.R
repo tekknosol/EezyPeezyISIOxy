@@ -3,7 +3,7 @@ tidy_annual_min_o2 <- function(path = "~/scratch/isi/oxygen"){
   files <- list.files(here(path))
   
   annual_min_o2 <- files %>% 
-    map_dfr(~{
+    future_map_dfr(~{
       file <- .x
       
       tryCatch({
