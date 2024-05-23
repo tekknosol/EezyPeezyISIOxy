@@ -15,5 +15,5 @@ source(here("R/figs_fleeting.R"))
 
 # fig_ts(type = args[1], gcm = args[2])
 
-fig_map()
-fig_map(type = "counterclim")
+fig_boxplots()
+fig_boxplots(type = "counterclim")
