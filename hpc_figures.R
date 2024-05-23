@@ -10,6 +10,7 @@ library(ggridges)
 library(sf)
 library(rnaturalearth)
 library(stringr)
+library(ggbeeswarm)
 
 source(here("R/figs_fleeting.R"))
 
